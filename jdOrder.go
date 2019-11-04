@@ -182,12 +182,12 @@ func main() {
 	showOrder.ShowOrderInfo()
 
 	// 统计每个店铺同步订单失败情况
-	/*for sid, order := range safeCompanyOrder.companyOrder {
-		fmt.Println(sid, "->", shopMap[sid], ": 订单总共：", order.totalCount, " 成功：", order.succeedCount, " 失败：", order.failedCount)
-		for _, val := range order.failedOrder {
-			fmt.Println(val.oid)
+	for sid, order := range platform.SafeCompanyOrder.CompanyOrder {
+		fmt.Println(sid, "->", platform.ShopMap[sid], ": 订单总共：", order.TotalCount, " 成功：", order.SucceedCount, " 失败：", order.FailedCount)
+		for _, val := range order.FailedOrder {
+			fmt.Println(val.Oid)
 		}
-	}*/
+	}
 	//}
 
 }
