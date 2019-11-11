@@ -109,8 +109,8 @@ func CheckSync(order *platform.MyOrderInfo, oriChan <-chan platform.Jdp, quit <-
 
 
 func ParseConfig() error{
-	platform.ConfigFilePath = "/etc/"
-	//platform.ConfigFilePath = "./"
+	//platform.ConfigFilePath = "/etc/"
+	platform.ConfigFilePath = "./"
 	var configFileName = platform.ConfigFilePath+platform.ConfigFileName
 
 	file,err := os.OpenFile(configFileName,os.O_RDONLY, 0755)
@@ -124,25 +124,41 @@ func ParseConfig() error{
 	}
 	var b = make([]byte,length)
 
-	file.Seek(0,0)
+	_, err = file.Seek(0,0)
+	if err != nil {
+		return err
+	}
 
 	_,err = file.Read(b)
 	if err != nil {
-		log.Panic(err.Error())
+		return err
 	}
+	// 读取成功之后，加入一个结束符
+	b = append(b,byte('\n'))
 
 	var byteStr = make([]byte,0)
 
+	var commentFlag = false
+
 	for _,char := range b {
 		// # 作为注释
-		if char == byte(platform.CommentIdentifier) && len(byteStr) == 0 {
+		if char == byte(platform.CommentIdentifier) {
+			commentFlag = true // 表示此行是注释行
 			continue
 		}
 
 		if char == byte('\n') {
-			if len(byteStr) == 0 {
+			if commentFlag {
+				// 表示刚刚读取的那一行是注释行，下面过程不用处理直接重置 byteStr
+				byteStr = byteStr[0:0]
+				commentFlag = false  // 重置标识符
 				continue
 			}
+
+			if len(byteStr) == 0 {  // 空行 直接读取下一行
+				continue
+			}
+
 			flag := 0
 			keyEnd := 0
 			valueStart := 0
@@ -162,7 +178,9 @@ func ParseConfig() error{
 			byteStr = byteStr[0:0]
 			continue
 		}
-		byteStr = append(byteStr,char)
+		if !commentFlag { // 注释行的字符不作处理
+			byteStr = append(byteStr, char)
+		}
 	}
 	return nil
 }

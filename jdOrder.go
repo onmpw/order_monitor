@@ -150,10 +150,13 @@ func ParseShop() {
 func main() {
 
 	// 解析配置
-	Tool.ParseConfig()
+	err := Tool.ParseConfig()
+	if err != nil {
+		log.Panic(err.Error())
+	}
 
 	// 解析数据库连接信息
-	Tool.ParseDatabaseInfo()
+	_ = Tool.ParseDatabaseInfo()
 
 
 	platform.SafeCompanyOrder = platform.NewSafeMap()
