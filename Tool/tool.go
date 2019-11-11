@@ -15,7 +15,7 @@ func CheckSync(order *platform.MyOrderInfo, oriChan <-chan platform.Jdp, quit <-
 	}
 
 	order.FailedOrder = make([]platform.BadOrder, 0)
-	stmtOut, err := platform.Db.Prepare("select count(*) from order_info where company_id=? and number=?")
+	stmtOut, err := platform.Db.Prepare("select count(*) from order_info where company_id=? and number=? and source!=\"System\"")
 	stmUnusualOut, err := platform.Db.Prepare("select count(*),`type`,`response`,`remarks` from order_sync_unusual where tid=? and is_delete='N'")
 	if err != nil {
 		return err
@@ -39,9 +39,7 @@ func CheckSync(order *platform.MyOrderInfo, oriChan <-chan platform.Jdp, quit <-
 
 			platform.SafeCompanyOrder.Lock()
 			if _, ok := platform.SafeCompanyOrder.CompanyOrder[orderInfo.ShopId]; !ok {
-				platform.SafeCompanyOrder.CompanyOrder[orderInfo.ShopId] = &platform.MyOrderInfo{
-					0, 0, 0, nil,nil, "",
-				}
+				platform.SafeCompanyOrder.CompanyOrder[orderInfo.ShopId] = &platform.MyOrderInfo{}
 			}
 			platform.SafeCompanyOrder.CompanyOrder[orderInfo.ShopId].TotalCount++
 			platform.SafeCompanyOrder.Unlock()

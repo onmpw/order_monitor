@@ -2,7 +2,6 @@ package Jd
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"monitor/Tool"
 	"monitor/platform"
@@ -18,7 +17,6 @@ var Order = platform.MyOrderInfo{
  */
 func getJdOriginData() (<-chan platform.Jdp, error) {
 	var myT platform.MyTime
-	fmt.Println(platform.JdDataSourceName)
 	jdDb, err := sql.Open(platform.DriverName, platform.JdDataSourceName)
 
 	if err != nil {
