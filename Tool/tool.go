@@ -15,12 +15,13 @@ func CheckSync(order *platform.MyOrderInfo, oriChan <-chan platform.Jdp, quit <-
 	}
 
 	order.FailedOrder = make([]platform.BadOrder, 0)
-	stmtOut, err := platform.Db.Prepare("select count(*) from order_info where company_id=? and number=? and source!=\"System\"")
+	/*stmtOut, err := platform.Db.Prepare("select count(*) from order_info where company_id=? and number=? and source!=\"System\"")
 	stmUnusualOut, err := platform.Db.Prepare("select count(*),`type`,`response`,`remarks` from order_sync_unusual where tid=? and is_delete='N'")
 	if err != nil {
 		return err
 	}
 	defer platform.CloseStmt(stmtOut)
+	defer platform.CloseStmt(stmUnusualOut)*/
 
 	var count, unusualCount int
 	var unusualType, response, remarks string
@@ -31,7 +32,7 @@ func CheckSync(order *platform.MyOrderInfo, oriChan <-chan platform.Jdp, quit <-
 			order.TotalCount++ // 记录订单总数
 
 			var failedOrder platform.BadOrder // 临时存储失败订单信息
-			row := stmtOut.QueryRow(orderInfo.CompanyId, orderInfo.Oid)
+			row := platform.CountStmt.QueryRow(orderInfo.CompanyId, orderInfo.Oid)
 			err = row.Scan(&count)
 			if err != nil {
 				panic(err.Error()) // proper error handling instead of panic in your app
@@ -55,14 +56,18 @@ func CheckSync(order *platform.MyOrderInfo, oriChan <-chan platform.Jdp, quit <-
 				failedOrder.Response = orderInfo.Response
 				failedOrder.OrderType = orderInfo.OrderType
 
-				unusualRow := stmUnusualOut.QueryRow(orderInfo.Oid)
+				unusualRow := platform.UnusualCountStmt.QueryRow(orderInfo.Oid)
 				_ = unusualRow.Scan(&unusualCount, &unusualType, &response, &remarks)
 				if unusualCount == 0 {
 					failedOrder.Reason = " 订单同步未成功，没有进入异常表，具体原因有待查明！" //订单失败原因
 				} else {
 					failedOrder.Reason = " 订单同步异常，异常类型：" + unusualType + " 原因：" + remarks // 同步订单异常
 				}
+
+				res , _ := platform.InsertStmt.Exec("hpf","15344532121",5053,68381,"company_name","shop_name","WS",orderInfo.Oid,1001,"F",0.13,failedOrder.Reason)
+
 				fmt.Printf("%s %c[31;40;1m%s%c[0m \n", orderInfo.Oid, 0x1B, "订单同步失败", 0x1B)
+				fmt.Println(res)
 				order.FailedOrder = append(order.FailedOrder, failedOrder)
 				platform.SafeCompanyOrder.Lock()
 				platform.SafeCompanyOrder.CompanyOrder[orderInfo.ShopId].FailedCount++
@@ -189,8 +194,27 @@ func ParseDatabaseInfo() error{
 	platform.DataSourceName = platform.Config["username"]+":"+platform.Config["password"]+"@tcp("+platform.Config["host"]+")/"+platform.Config["database"]
 	platform.UcDataSourceName = platform.Config["username"]+":"+platform.Config["password"]+"@tcp("+platform.Config["host"]+")/"+platform.Config["uc_database"]
 	platform.JdDataSourceName = platform.Config["jd_username"]+":"+platform.Config["jd_password"]+"@tcp("+platform.Config["jd_host"]+":"+platform.Config["jd_port"]+")/"+platform.Config["database"]
+	platform.LocalDataSourceName = platform.Config["local_username"]+":"+platform.Config["local_password"]+"@tcp("+platform.Config["local_host"]+")/"+platform.Config["local_database"]
 
 	platform.Db , _ = sql.Open(platform.DriverName, platform.DataSourceName)
+
+	var err error
+	platform.CountStmt, err = platform.Db.Prepare("select count(*) from order_info where company_id=? and number=? and source!=\"System\"")
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	platform.UnusualCountStmt, err = platform.Db.Prepare("select count(*),`type`,`response`,`remarks` from order_sync_unusual where tid=? and is_delete='N'")
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	platform.LocalDb , _ = sql.Open(platform.DriverName,platform.LocalDataSourceName)
+	platform.InsertStmt , err = platform.LocalDb.Prepare("insert into `mihuan_order_monitor`(`receiver_name`,`receiver_mobile`,`company_id`,`shop_id`,`company_name`,`shop_name`,`order_type`,`order_id`,`platform_id`,`sync_result`,`price`,`description`) values (?,?,?,?,?,?,?,?,?,?,?,?)")
+
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
 	return nil
 }
 
@@ -199,4 +223,12 @@ func Config(key string) string {
 		return value
 	}
 	return ""
+}
+
+func Close(){
+	platform.CloseStmt(platform.CountStmt)
+	platform.CloseStmt(platform.UnusualCountStmt)
+	platform.CloseStmt(platform.InsertStmt)
+	platform.CloseDb(platform.Db)
+	platform.CloseDb(platform.LocalDb)
 }

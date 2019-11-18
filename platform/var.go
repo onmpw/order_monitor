@@ -7,6 +7,7 @@ var (
 	DataSourceName    = ""
 	JdDataSourceName  = ""
 	UcDataSourceName  = ""
+	LocalDataSourceName  = ""
 
 	DateFormat  = "2006-01-02 15:04:05"
 	TypeNum           = 7
@@ -20,6 +21,12 @@ var (
 	SafeCompanyOrder *safeMap
 
 	Db *sql.DB
+	LocalDb *sql.DB
+
+	CountStmt *sql.Stmt
+	UnusualCountStmt *sql.Stmt
+
+	InsertStmt *sql.Stmt
 
 	Config         = make(map[string]string)
 	ConfigFilePath = ""

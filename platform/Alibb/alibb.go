@@ -10,7 +10,7 @@ import (
 
 var alibbChan	= make(chan int, 1)
 var Order = platform.MyOrderInfo{
-	Platform: "1688",
+	Platform: "1688", PlatformKey:"1688",
 }
 
 /**

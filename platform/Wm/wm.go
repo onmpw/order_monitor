@@ -9,7 +9,7 @@ import (
 
 var wmChan  = make(chan int, 1)
 var Order = platform.MyOrderInfo{
-	Platform: "微盟",
+	Platform: "微盟", PlatformKey:"WM",
 }
 
 /**

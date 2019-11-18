@@ -9,7 +9,7 @@ import (
 
 var jdChan = make(chan int, 1)
 var Order = platform.MyOrderInfo{
-	Platform: "京东",
+	Platform: "京东", PlatformKey:"JD",
 }
 
 /**

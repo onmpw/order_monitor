@@ -3,13 +3,13 @@ package Pdd
 import (
 	"database/sql"
 	"log"
-	"monitor/platform"
 	"monitor/Tool"
+	"monitor/platform"
 )
 
 var pddChan = make(chan int, 1)
 var Order = platform.MyOrderInfo{
-	Platform: "拼多多",
+	Platform: "拼多多", PlatformKey:"PDD",
 }
 
 /**

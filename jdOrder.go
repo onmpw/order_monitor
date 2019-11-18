@@ -161,7 +161,6 @@ func main() {
 
 	platform.SafeCompanyOrder = platform.NewSafeMap()
 
-	defer platform.CloseDb(platform.Db)
 	defer close(platform.C)
 	//for num:=0 ; num < 10000; num++ {
 	start := time.Unix(time.Now().Unix(), 0).Format(platform.DateFormat)
@@ -191,6 +190,8 @@ func main() {
 			fmt.Println(val.Oid)
 		}
 	}
+
 	//}
+	Tool.Close()
 
 }

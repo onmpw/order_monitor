@@ -28,7 +28,7 @@ type MyOrderInfo struct {
 	TotalCount, FailedCount, SucceedCount int
 	FailedOrder                           []BadOrder
 	SucceedOrder                          []SucceedOrder
-	Platform                              string
+	Platform , PlatformKey                string
 }
 
 type MyOrderInfoArr []MyOrderInfo

@@ -10,7 +10,7 @@ import (
 var yzChan      = make(chan int, 1)
 
 var Order = platform.MyOrderInfo{
-	Platform: "有赞",
+	Platform: "有赞", PlatformKey:"YZ",
 }
 
 /**
