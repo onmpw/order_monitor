@@ -4,26 +4,26 @@ import (
 	"database/sql"
 	"log"
 	"monitor/Tool"
-	"monitor/platform"
+	"monitor/monitor"
 )
 
 var pddChan = make(chan int, 1)
-var Order = platform.MyOrderInfo{
+var Order = monitor.MyOrderInfo{
 	Platform: "拼多多", PlatformKey:"PDD",
 }
 
 /**
  * 获取拼多多的原始数据
  */
-func getPddOriginData() (<-chan platform.Jdp, error) {
-	var myT platform.MyTime
-	pddDb, err := sql.Open(platform.DriverName, platform.DataSourceName)
+func getPddOriginData() (<-chan monitor.Jdp, error) {
+	var myT monitor.MyTime
+	pddDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer platform.CloseDb(pddDb)
+	defer monitor.CloseDb(pddDb)
 
 	err = pddDb.Ping()
 	if err != nil {
@@ -34,20 +34,20 @@ func getPddOriginData() (<-chan platform.Jdp, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer platform.CloseStmt(stmtOut)
+	defer monitor.CloseStmt(stmtOut)
 
 	// 计算时间
 	myT.CalculateTime()
 
-	var pddJdp platform.Jdp
+	var pddJdp monitor.Jdp
 
-	var inter = platform.RowData{&pddJdp.Id, &pddJdp.Oid, &pddJdp.Response, &pddJdp.CompanyId, &pddJdp.Created, &pddJdp.Modified, &pddJdp.OrderType, &pddJdp.ShopId}
+	var inter = monitor.RowData{&pddJdp.Id, &pddJdp.Oid, &pddJdp.Response, &pddJdp.CompanyId, &pddJdp.Created, &pddJdp.Modified, &pddJdp.OrderType, &pddJdp.ShopId}
 
 	rows, err := stmtOut.Query(myT.Start, myT.End)
 	if err != nil {
 		return nil, err
 	}
-	oriChannel := make(chan platform.Jdp)
+	oriChannel := make(chan monitor.Jdp)
 
 	go func() {
 		for rows.Next() {

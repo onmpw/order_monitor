@@ -1,14 +1,39 @@
-package platform
+package monitor
 
 import (
 	"database/sql"
 	"fmt"
+	"monitor/monitor/config"
 	"sync"
 	"time"
 )
 
-const ConfigFileName = "monitor.ini"
-const CommentIdentifier = '#'
+var (
+	DriverName        = "mysql"
+	DataSourceName    = ""
+	JdDataSourceName  = ""
+	UcDataSourceName  = ""
+	LocalDataSourceName  = ""
+
+	DateFormat  = "2006-01-02 15:04:05"
+	TypeNum           = 7
+
+	C = make(chan int, TypeNum) // channel 用于控制多协程
+
+	CompanyMap = make(mis)
+	ShopMap    = make(mis)
+
+	//companyOrder = make(map[int]*myOrderInfo)
+	SafeCompanyOrder *safeMap
+
+	Db *sql.DB
+	LocalDb *sql.DB
+
+	CountStmt *sql.Stmt
+	UnusualCountStmt *sql.Stmt
+
+	InsertStmt *sql.Stmt
+)
 
 type Order interface {
 	ShowOrderInfo()
@@ -79,6 +104,16 @@ func NewSafeMap() *safeMap {
 	sm := new(safeMap)
 	sm.CompanyOrder = make(map[int]*MyOrderInfo)
 	return sm
+}
+
+func Init() error {
+
+	// 加载配置文件
+	err := config.Init()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 /**

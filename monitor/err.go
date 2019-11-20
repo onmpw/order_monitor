@@ -1,4 +1,4 @@
-package platform
+package monitor
 
 import "fmt"
 
@@ -12,6 +12,6 @@ func (e *Error) Error() string{
 	return fmt.Sprintf("code=%d;msg=%s",e.code,e.errMsg)
 }
 
-func ErrorNew() *Error{
-	return &Error{1,"你错了","不知道在哪错的"}
+func ErrorNew(code uint32,msg string, where string) *Error{
+	return &Error{code,msg,where}
 }

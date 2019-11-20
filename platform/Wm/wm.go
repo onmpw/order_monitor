@@ -4,26 +4,26 @@ import (
 	"database/sql"
 	"log"
 	"monitor/Tool"
-	"monitor/platform"
+	"monitor/monitor"
 )
 
 var wmChan  = make(chan int, 1)
-var Order = platform.MyOrderInfo{
+var Order = monitor.MyOrderInfo{
 	Platform: "微盟", PlatformKey:"WM",
 }
 
 /**
  * 获取微盟的原始数据
  */
-func getWmOriginData() (<-chan platform.Jdp, error) {
-	var myT platform.MyTime
-	wmDb, err := sql.Open(platform.DriverName, platform.DataSourceName)
+func getWmOriginData() (<-chan monitor.Jdp, error) {
+	var myT monitor.MyTime
+	wmDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer platform.CloseDb(wmDb)
+	defer monitor.CloseDb(wmDb)
 
 	err = wmDb.Ping()
 	if err != nil {
@@ -34,21 +34,21 @@ func getWmOriginData() (<-chan platform.Jdp, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer platform.CloseStmt(stmtOut)
+	defer monitor.CloseStmt(stmtOut)
 
 	// 计算时间
 	myT.CalculateTime()
 
-	var wmJdp platform.Jdp
+	var wmJdp monitor.Jdp
 
-	var inter = platform.RowData{&wmJdp.Id, &wmJdp.Oid, &wmJdp.Response, &wmJdp.CompanyId, &wmJdp.Created, &wmJdp.Modified, &wmJdp.OrderType, &wmJdp.ShopId}
+	var inter = monitor.RowData{&wmJdp.Id, &wmJdp.Oid, &wmJdp.Response, &wmJdp.CompanyId, &wmJdp.Created, &wmJdp.Modified, &wmJdp.OrderType, &wmJdp.ShopId}
 
 	rows, err := stmtOut.Query(myT.Start, myT.End)
 	if err != nil {
 		return nil, err
 	}
 
-	oriChannel := make(chan platform.Jdp)
+	oriChannel := make(chan monitor.Jdp)
 
 	go func() {
 		for rows.Next() {

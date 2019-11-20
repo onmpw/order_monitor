@@ -4,21 +4,21 @@ import (
 	"database/sql"
 	"log"
 	"monitor/Tool"
-	"monitor/platform"
+	"monitor/monitor"
 )
 
 
 var alibbChan	= make(chan int, 1)
-var Order = platform.MyOrderInfo{
+var Order = monitor.MyOrderInfo{
 	Platform: "1688", PlatformKey:"1688",
 }
 
 /**
  * 获取1688的原始数据
  */
-func getAlibbOriginData() (<-chan platform.Jdp, error) {
-	var myT platform.MyTime
-	alibbDb , err := sql.Open(platform.DriverName,platform.DataSourceName)
+func getAlibbOriginData() (<-chan monitor.Jdp, error) {
+	var myT monitor.MyTime
+	alibbDb , err := sql.Open(monitor.DriverName,monitor.DataSourceName)
 
 	if err != nil {
 		return nil,err
@@ -29,13 +29,13 @@ func getAlibbOriginData() (<-chan platform.Jdp, error) {
 		return nil,err
 	}
 
-	defer platform.CloseStmt(stmtOut)
+	defer monitor.CloseStmt(stmtOut)
 
 	// 计算时间
 	myT.CalculateTime()
 
-	var alibbJdp platform.Jdp
-	var inter = platform.RowData{&alibbJdp.Id,&alibbJdp.Oid,&alibbJdp.Response,&alibbJdp.CompanyId,&alibbJdp.Created,&alibbJdp.Modified,&alibbJdp.OrderType,&alibbJdp.ShopId}
+	var alibbJdp monitor.Jdp
+	var inter = monitor.RowData{&alibbJdp.Id,&alibbJdp.Oid,&alibbJdp.Response,&alibbJdp.CompanyId,&alibbJdp.Created,&alibbJdp.Modified,&alibbJdp.OrderType,&alibbJdp.ShopId}
 
 	rows, err := stmtOut.Query(myT.Start,myT.End)
 
@@ -43,7 +43,7 @@ func getAlibbOriginData() (<-chan platform.Jdp, error) {
 		return nil,err
 	}
 
-	oriChannel := make(chan platform.Jdp)
+	oriChannel := make(chan monitor.Jdp)
 
 	go func(){
 		for rows.Next() {

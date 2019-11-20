@@ -6,7 +6,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"monitor/Tool"
-	"monitor/platform"
+	"monitor/monitor"
+	"monitor/monitor/db"
 	"monitor/platform/Alibb"
 	"monitor/platform/Jd"
 	"monitor/platform/Pdd"
@@ -21,13 +22,13 @@ var shopChan    = make(chan int, 1)
 /**
  * 获取店铺信息
  */
-func getShopInfo() (<-chan platform.ShopInfo, error) {
-	shopDb, err := sql.Open(platform.DriverName, platform.DataSourceName)
+func getShopInfo() (<-chan monitor.ShopInfo, error) {
+	shopDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
 	if err != nil {
 		return nil, err
 	}
 
-	defer platform.CloseDb(shopDb)
+	defer monitor.CloseDb(shopDb)
 
 	err = shopDb.Ping()
 	if err != nil {
@@ -39,18 +40,18 @@ func getShopInfo() (<-chan platform.ShopInfo, error) {
 		return nil, err
 	}
 
-	defer platform.CloseStmt(stmtOut)
+	defer monitor.CloseStmt(stmtOut)
 
-	var shop platform.ShopInfo
-	var inter = platform.RowData{&shop.ShopId, &shop.Name, &shop.Alias, &shop.Nick, &shop.ShopType}
+	var shop monitor.ShopInfo
+	var inter = monitor.RowData{&shop.ShopId, &shop.Name, &shop.Alias, &shop.Nick, &shop.ShopType}
 
-	now := time.Unix(time.Now().Unix(), 0).Format(platform.DateFormat)
+	now := time.Unix(time.Now().Unix(), 0).Format(monitor.DateFormat)
 	rows, err := stmtOut.Query(now)
 	if err != nil {
 		return nil, err
 	}
 
-	shopOri := make(chan platform.ShopInfo)
+	shopOri := make(chan monitor.ShopInfo)
 	go func() {
 		for rows.Next() {
 			err = rows.Scan(inter...)
@@ -68,13 +69,13 @@ func getShopInfo() (<-chan platform.ShopInfo, error) {
 /**
  * 获取公司信息
  */
-func getCompanyInfo() (<-chan platform.CompanyInfo, error) {
-	ucDb, err := sql.Open(platform.DriverName, platform.UcDataSourceName)
+func getCompanyInfo() (<-chan monitor.CompanyInfo, error) {
+	ucDb, err := sql.Open(monitor.DriverName, monitor.UcDataSourceName)
 	if err != nil {
 		return nil, err
 	}
 
-	defer platform.CloseDb(ucDb)
+	defer monitor.CloseDb(ucDb)
 
 	err = ucDb.Ping()
 	if err != nil {
@@ -85,17 +86,17 @@ func getCompanyInfo() (<-chan platform.CompanyInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer platform.CloseStmt(stmtOut)
+	defer monitor.CloseStmt(stmtOut)
 
-	var company platform.CompanyInfo
-	var inter = platform.RowData{&company.Id, &company.Name}
+	var company monitor.CompanyInfo
+	var inter = monitor.RowData{&company.Id, &company.Name}
 
 	rows, err := stmtOut.Query()
 	if err != nil {
 		return nil, err
 	}
 
-	companyOri := make(chan platform.CompanyInfo)
+	companyOri := make(chan monitor.CompanyInfo)
 	go func() {
 		for rows.Next() {
 			err = rows.Scan(inter...)
@@ -119,9 +120,9 @@ func ParseCompany() {
 		for {
 			select {
 			case info := <-oriChan:
-				platform.CompanyMap[info.Id] = info.Name
+				monitor.CompanyMap[info.Id] = info.Name
 			case <-companyChan:
-				platform.C <- 1
+				monitor.C <- 1
 				return
 			}
 		}
@@ -138,9 +139,9 @@ func ParseShop() {
 			select {
 			case info := <-oriChan:
 
-				platform.ShopMap[info.ShopId] = info.Alias
+				monitor.ShopMap[info.ShopId] = info.Alias
 			case <-shopChan:
-				platform.C <- 1
+				monitor.C <- 1
 				return
 			}
 		}
@@ -149,21 +150,22 @@ func ParseShop() {
 
 func main() {
 
-	// 解析配置
-	err := Tool.ParseConfig()
+	err := monitor.Init()
+	err = db.Db.Init()
 	if err != nil {
 		log.Panic(err.Error())
 	}
+	return
 
 	// 解析数据库连接信息
 	_ = Tool.ParseDatabaseInfo()
 
 
-	platform.SafeCompanyOrder = platform.NewSafeMap()
+	monitor.SafeCompanyOrder = monitor.NewSafeMap()
 
-	defer close(platform.C)
+	defer close(monitor.C)
 	//for num:=0 ; num < 10000; num++ {
-	start := time.Unix(time.Now().Unix(), 0).Format(platform.DateFormat)
+	start := time.Unix(time.Now().Unix(), 0).Format(monitor.DateFormat)
 	fmt.Println(start)
 
 	go Jd.ParseJd()
@@ -174,18 +176,18 @@ func main() {
 	go ParseCompany()
 	go ParseShop()
 
-	platform.Wait(platform.C, platform.TypeNum)
+	monitor.Wait(monitor.C, monitor.TypeNum)
 
-	end := time.Unix(time.Now().Unix(), 0).Format(platform.DateFormat)
+	end := time.Unix(time.Now().Unix(), 0).Format(monitor.DateFormat)
 	fmt.Println(end)
 
-	var showOrder platform.Order = platform.MyOrderInfoArr{Jd.Order, Pdd.Order, Wm.Order, Youzan.Order,Alibb.Order}
+	var showOrder monitor.Order = monitor.MyOrderInfoArr{Jd.Order, Pdd.Order, Wm.Order, Youzan.Order,Alibb.Order}
 
 	showOrder.ShowOrderInfo()
 
 	// 统计每个店铺同步订单失败情况
-	for sid, order := range platform.SafeCompanyOrder.CompanyOrder {
-		fmt.Println(sid, "->", platform.ShopMap[sid], ": 订单总共：", order.TotalCount, " 成功：", order.SucceedCount, " 失败：", order.FailedCount)
+	for sid, order := range monitor.SafeCompanyOrder.CompanyOrder {
+		fmt.Println(sid, "->", monitor.ShopMap[sid], ": 订单总共：", order.TotalCount, " 成功：", order.SucceedCount, " 失败：", order.FailedCount)
 		for _, val := range order.FailedOrder {
 			fmt.Println(val.Oid)
 		}

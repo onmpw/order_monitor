@@ -4,27 +4,27 @@ import (
 	"database/sql"
 	"log"
 	"monitor/Tool"
-	"monitor/platform"
+	"monitor/monitor"
 )
 
 var yzChan      = make(chan int, 1)
 
-var Order = platform.MyOrderInfo{
+var Order = monitor.MyOrderInfo{
 	Platform: "有赞", PlatformKey:"YZ",
 }
 
 /**
  * 获取有赞的原始数据
  */
-func getYouZanOriginData() (<-chan platform.Jdp, error) {
-	var myT platform.MyTime
-	youzanDb, err := sql.Open(platform.DriverName, platform.DataSourceName)
+func getYouZanOriginData() (<-chan monitor.Jdp, error) {
+	var myT monitor.MyTime
+	youzanDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer platform.CloseDb(youzanDb)
+	defer monitor.CloseDb(youzanDb)
 
 	err = youzanDb.Ping()
 	if err != nil {
@@ -35,20 +35,20 @@ func getYouZanOriginData() (<-chan platform.Jdp, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer platform.CloseStmt(stmtOut)
+	defer monitor.CloseStmt(stmtOut)
 
 	// 计算时间
 	myT.CalculateTime()
 
-	var youzanJdp platform.Jdp
+	var youzanJdp monitor.Jdp
 
-	var inter = platform.RowData{&youzanJdp.Id, &youzanJdp.Oid, &youzanJdp.Response, &youzanJdp.CompanyId, &youzanJdp.Created, &youzanJdp.Modified, &youzanJdp.OrderType, &youzanJdp.ShopId}
+	var inter = monitor.RowData{&youzanJdp.Id, &youzanJdp.Oid, &youzanJdp.Response, &youzanJdp.CompanyId, &youzanJdp.Created, &youzanJdp.Modified, &youzanJdp.OrderType, &youzanJdp.ShopId}
 
 	rows, err := stmtOut.Query(myT.Start, myT.End)
 	if err != nil {
 		return nil, err
 	}
-	oriChannel := make(chan platform.Jdp)
+	oriChannel := make(chan monitor.Jdp)
 
 	go func() {
 		for rows.Next() {

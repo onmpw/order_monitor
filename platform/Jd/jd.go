@@ -4,26 +4,26 @@ import (
 	"database/sql"
 	"log"
 	"monitor/Tool"
-	"monitor/platform"
+	"monitor/monitor"
 )
 
 var jdChan = make(chan int, 1)
-var Order = platform.MyOrderInfo{
+var Order = monitor.MyOrderInfo{
 	Platform: "京东", PlatformKey:"JD",
 }
 
 /**
  * 获取京东的原始数据
  */
-func getJdOriginData() (<-chan platform.Jdp, error) {
-	var myT platform.MyTime
-	jdDb, err := sql.Open(platform.DriverName, platform.JdDataSourceName)
+func getJdOriginData() (<-chan monitor.Jdp, error) {
+	var myT monitor.MyTime
+	jdDb, err := sql.Open(monitor.DriverName, monitor.JdDataSourceName)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer platform.CloseDb(jdDb)
+	defer monitor.CloseDb(jdDb)
 
 	err = jdDb.Ping()
 	if err != nil {
@@ -34,21 +34,21 @@ func getJdOriginData() (<-chan platform.Jdp, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer platform.CloseStmt(stmtOut)
+	defer monitor.CloseStmt(stmtOut)
 
 	// 计算时间
 	myT.CalculateTime()
 
-	var jdJdp platform.Jdp
+	var jdJdp monitor.Jdp
 
-	var inter = platform.RowData{&jdJdp.Id, &jdJdp.Oid, &jdJdp.Response, &jdJdp.CompanyId, &jdJdp.Created, &jdJdp.Modified, &jdJdp.OrderType, &jdJdp.ShopId}
+	var inter = monitor.RowData{&jdJdp.Id, &jdJdp.Oid, &jdJdp.Response, &jdJdp.CompanyId, &jdJdp.Created, &jdJdp.Modified, &jdJdp.OrderType, &jdJdp.ShopId}
 
 	rows, err := stmtOut.Query(myT.Start, myT.End)
 	if err != nil {
 		return nil, err
 	}
 
-	oriChannel := make(chan platform.Jdp)
+	oriChannel := make(chan monitor.Jdp)
 
 	go func() {
 		for rows.Next() {
