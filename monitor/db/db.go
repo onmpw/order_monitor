@@ -7,14 +7,7 @@ import (
 
 
 var (
-	DataSourceName      = ""
-	JdDataSourceName    = ""
-	UcDataSourceName    = ""
-	LocalDataSourceName = ""
-
 	Db      = &BaseDb{}
-	LocalDb *sql.DB
-	JdDB    *sql.DB
 )
 
 type BaseDb struct {
@@ -31,14 +24,17 @@ type BaseDbContract interface {
 func (db *BaseDb) Init() error {
 
 	// 加载db配置项
-	loadConfig()
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
 
 	db.dbContainer = make(map[string]BaseDbContract)
 	db.dataSource = make(map[string]string)
 
 	NewMysql().registerDb()
 
-	err := db.SwitchServer("mysql")
+	err = db.SwitchServer("mysql")
 
 	return err
 }
