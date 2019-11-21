@@ -155,6 +155,9 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
+	_ = db.Db.Connect("development")
+
+	fmt.Println(db.Db.Connector)
 	return
 
 	// 解析数据库连接信息

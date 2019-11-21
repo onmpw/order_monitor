@@ -1,24 +1,20 @@
 package db
 
-import (
-	"database/sql"
-)
 
 
-
-var (
-	Db      = &BaseDb{}
-)
+var Db      = &BaseDb{}
 
 type BaseDb struct {
-	Connector     	*sql.DB
-	GetConnection 	func(source string) *sql.DB
-	dbContainer   	map[string]BaseDbContract
+	Connector     	BaseDbContract
+	GetConnection 	func(source string) BaseDbContract
+	dbServers   	map[string]BaseDbContract
 	dataSource		map[string]string
 }
 
 type BaseDbContract interface {
-	Connection(connection string) *sql.DB
+	Connection(connection string) BaseDbContract
+	CheckDriverName(connection string) bool
+	Table(table string)		BaseDbContract
 }
 
 func (db *BaseDb) Init() error {
@@ -29,7 +25,7 @@ func (db *BaseDb) Init() error {
 		return err
 	}
 
-	db.dbContainer = make(map[string]BaseDbContract)
+	db.dbServers = make(map[string]BaseDbContract)
 	db.dataSource = make(map[string]string)
 
 	NewMysql().registerDb()
@@ -40,7 +36,7 @@ func (db *BaseDb) Init() error {
 }
 
 func (db *BaseDb) SwitchServer(driverName string) error{
-	if contract, ok := db.dbContainer[driverName]; ok {
+	if contract, ok := db.dbServers[driverName]; ok {
 		db.GetConnection = contract.Connection
 		return nil
 	}
@@ -60,4 +56,9 @@ func (db *BaseDb) getDataSource(connection string) string {
 	db.dataSource[connection] = source
 
 	return source
+}
+
+func (db *BaseDb) Connect(source string) BaseDbContract {
+	db.Connector = db.GetConnection(source)
+	return db.Connector
 }
