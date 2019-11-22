@@ -3,21 +3,27 @@ package db
 
 
 var Db      = &BaseDb{}
+const DefaultConnection = "production"   // 默认的连接名称  需要在配置文件(config.go)中添加其相应的配置项
 
 type BaseDb struct {
 	Connector     	BaseDbContract
 	GetConnection 	func(source string) BaseDbContract
-	dbServers   	map[string]BaseDbContract
+	dbServers   	map[string]BaseDbServer
 	dataSource		map[string]string
 }
 
-type BaseDbContract interface {
+type BaseDbServer interface {
 	Connection(connection string) BaseDbContract
 	CheckDriverName(connection string) bool
-	Table(table string)		BaseDbContract
 }
 
-func (db *BaseDb) Init() error {
+type BaseDbContract interface {
+	Table(table string)		BaseDbContract
+	GetTable()				string
+	Select()				BaseDbContract
+}
+
+func (this *BaseDb) Init() error {
 
 	// 加载db配置项
 	err := loadConfig()
@@ -25,26 +31,27 @@ func (db *BaseDb) Init() error {
 		return err
 	}
 
-	db.dbServers = make(map[string]BaseDbContract)
-	db.dataSource = make(map[string]string)
+	this.dbServers = make(map[string]BaseDbServer)
+	this.dataSource = make(map[string]string)
 
-	NewMysql().registerDb()
+	NewMysqlServer().registerDb()
 
-	err = db.SwitchServer("mysql")
+	err = this.SwitchServer("mysql")
 
 	return err
 }
 
-func (db *BaseDb) SwitchServer(driverName string) error{
-	if contract, ok := db.dbServers[driverName]; ok {
-		db.GetConnection = contract.Connection
+func (this *BaseDb) SwitchServer(driverName string) error{
+	if server, ok := this.dbServers[driverName]; ok {
+		this.Connector = server.Connection(DefaultConnection)
+		this.GetConnection = server.Connection
 		return nil
 	}
 	return &NoDriverError{errMsg:driverName+" driver not found!",Err:nil}
 }
 
-func (db *BaseDb) getDataSource(connection string) string {
-	if dataSource , ok := db.dataSource[connection]; ok {
+func (this *BaseDb) getDataSource(connection string) string {
+	if dataSource , ok := this.dataSource[connection]; ok {
 		return dataSource
 	}
 	localConn := connections[connection]
@@ -53,12 +60,7 @@ func (db *BaseDb) getDataSource(connection string) string {
 		port = ":"+val
 	}
 	source := localConn["username"]+":"+localConn["password"]+"@tcp("+localConn["host"]+port+")/"+localConn["database"]
-	db.dataSource[connection] = source
+	this.dataSource[connection] = source
 
 	return source
-}
-
-func (db *BaseDb) Connect(source string) BaseDbContract {
-	db.Connector = db.GetConnection(source)
-	return db.Connector
 }

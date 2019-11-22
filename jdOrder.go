@@ -155,9 +155,9 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	_ = db.Db.Connect("development")
 
-	fmt.Println(db.Db.Connector)
+	fmt.Println(db.Db.Connector.Table("source").Select())
+
 	return
 
 	// 解析数据库连接信息
