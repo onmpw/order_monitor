@@ -148,6 +148,18 @@ func ParseShop() {
 	}()
 }
 
+type user struct {
+	id 		int
+	name 	string
+	mobile 	string
+}
+
+type User struct{
+	id		int
+	name 	string
+	mobile 	string
+}
+
 func main() {
 
 	err := monitor.Init()
@@ -155,8 +167,14 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
-
-	fmt.Println(db.Db.Connector.Table("source").Select())
+	var user User
+	rows := db.Db.Connector().Table("jiyi_user_info").Select("id","name","mobile").Where([]interface{}{[]interface{}{"id",17976}}...).GetOne()
+	err = rows.Scan([]interface{}{&user.id,&user.name,&user.mobile}...)
+	fmt.Println(user)
+	/*for rows.Next() {
+		err = rows.Scan([]interface{}{&user.id,&user.name,&user.mobile}...)
+		fmt.Println(user.id)
+	}*/
 
 	return
 

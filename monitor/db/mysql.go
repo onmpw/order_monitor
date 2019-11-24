@@ -1,8 +1,10 @@
 package db
 
 import (
-	"database/sql"
+	. "database/sql"
+	"fmt"
 	"log"
+	"reflect"
 	"sync"
 )
 
@@ -26,11 +28,13 @@ type MysqlServer struct {
 }
 
 type Mysql struct {
-	connector 			*sql.DB
-	connections 		map[string]*sql.DB
+	connector 			*DB
+	connections 		map[string]*DB
 	currTable 			string
 	fields				string
 	sql					string
+	where				string
+	result 				[]interface{}
 }
 
 func NewMysqlPool() *MysqlPool {
@@ -50,7 +54,7 @@ func NewMysqlServer() *MysqlServer {
 
 func NewMysql() *Mysql{
 	return &Mysql{
-		connections: make(map[string]*sql.DB),
+		connections: make(map[string]*DB),
 	}
 }
 
@@ -81,7 +85,7 @@ func (ms *MysqlServer) Connection(connection string) BaseDbContract {
 		m.connector = conn
 	}
 	dataSource := Db.getDataSource(connection)
-	db ,err := sql.Open(DriverName,dataSource)
+	db ,err := Open(DriverName,dataSource)
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -146,8 +150,86 @@ func (m *Mysql) GetTable() string {
 	return m.currTable
 }
 
-func (m *Mysql) Select() BaseDbContract {
-	m.fields = "id,name,mobile,createtime,updatetime"
-	m.sql = "select "+m.fields+ " from "+m.currTable
+// Select: select field
+func (m *Mysql) Select(fields ...interface{}) BaseDbContract {
+	if len(fields) == 0 {
+		m.fields = "*"
+	}else {
+		for _,field := range fields {
+			var f = fmt.Sprintf("`%v`",field)
+			if len(m.fields) != 0 {
+				m.fields += ","
+			}
+			m.fields += f
+		}
+	}
 	return m
+}
+
+// Where: 设置where查询条件
+func (m *Mysql) Where(where ...interface{}) BaseDbContract {
+	for _,w := range where {
+		if len(m.where) != 0 {
+			m.where += " and "
+		}
+		v := w.([]interface{})
+		m.where += "`"+v[0].(string)+"`"
+		if len(v) == 2 {
+			m.where += "="
+			switch d := v[1].(type) {
+			case string:
+				m.where += "'"+d+"'"
+			case int:
+				m.where += fmt.Sprintf("%v",d)
+			}
+		}
+		if len(v) == 3 {
+			m.where += v[1].(string)
+			switch d := v[2].(type) {
+			case string:
+				m.where += "'"+d+"'"
+			case int:
+				m.where += fmt.Sprintf("%v",d)
+			}
+		}
+	}
+	return m
+}
+
+func (m *Mysql) Get() *Rows {
+	m.sql = "SELECT "+m.fields+" FROM "+m.currTable
+	if len(m.where) > 0 {
+		m.sql += " WHERE "+m.where
+	}
+	fmt.Println(m.sql)
+	stmt,err := m.connector.Prepare(m.sql)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	rows, err := stmt.Query()
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	m.free()
+	return rows
+}
+
+func (m *Mysql) GetOne() *Row {
+	m.sql = "SELECT "+m.fields+" FROM "+m.currTable+" WHERE "+m.where
+	stmt,err := m.connector.Prepare(m.sql)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	row := stmt.QueryRow()
+	m.free()
+	return row
+}
+
+func (m *Mysql) free() bool {
+	server := reflect.ValueOf(Db.dbServers[DriverName]).Interface().(*MysqlServer)
+
+	server.SetHandle()
+
+	return true
+
 }
