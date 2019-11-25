@@ -71,13 +71,12 @@ func (ms *MysqlServer) GetHandle() *Mysql {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	select {
+	case m:= <- ms.pool.pop():
+		mysql = m
+		break
 	case <-ctx.Done():
-		return nil
+		break
 	}
-	for mysql == nil {
-		mysql = ms.pool.pop()
-	}
-
 	return mysql
 }
 
@@ -118,14 +117,17 @@ func (ms *MysqlServer) Connection(connection string) BaseDbContract {
 }
 
 // pop : 出队列
-func (pool *MysqlPool) pop() *Mysql {
+func (pool *MysqlPool) pop() <- chan *Mysql {
 	var m *Mysql
+	var mysql = make(chan *Mysql,1)
+	for pool.num == pool.space && pool.head == pool.tail {} // 如果队列已经满了，并且队列中的所有元素都正在使用，则等待释放元素
 	pool.RLock()
 	if pool.num == 0 {
 		m = NewMysql()
 		pool.num++
 		pool.RUnlock()
-		return m
+		mysql <- m
+		return mysql
 	}
 
 	if pool.head < pool.tail {
@@ -133,14 +135,16 @@ func (pool *MysqlPool) pop() *Mysql {
 		pool.pool = append(pool.pool[:pool.head],pool.pool[pool.head+1:]...)
 		pool.tail = len(pool.pool)
 		pool.RUnlock()
-		return m
+		mysql <- m
+		return mysql
 	}
 
 	if pool.num < pool.space {
 		m = NewMysql()
 		pool.num++
 		pool.RUnlock()
-		return m
+		mysql <- m
+		return mysql
 	}
 	pool.RUnlock()
 	return nil

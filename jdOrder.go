@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -162,7 +161,7 @@ type User struct{
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	/*ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	select {
@@ -172,7 +171,7 @@ func main() {
 		fmt.Println(ctx.Err()) // prints "context deadline exceeded"
 	}
 
-	return
+	return*/
 	err := monitor.Init()
 	err = db.Db.Init()
 	if err != nil {

@@ -2,7 +2,6 @@ package db
 
 import (
 	. "database/sql"
-	"fmt"
 	"sync"
 )
 
@@ -78,6 +77,5 @@ func (db *BaseDb) getDataSource(connection string) string {
 
 func (db *BaseDb) Connector() BaseDbContract {
 	Connect := db.GetConnection(DefaultConnection)
-	fmt.Println(Connect)
 	return Connect
 }
