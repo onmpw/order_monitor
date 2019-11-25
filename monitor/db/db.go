@@ -1,6 +1,8 @@
 package db
 
-import . "database/sql"
+import (
+	. "database/sql"
+)
 
 var Db      = &BaseDb{}
 const DefaultConnection = "production"   // 默认的连接名称  需要在配置文件(config.go)中添加其相应的配置项
@@ -17,12 +19,15 @@ type BaseDbServer interface {
 }
 
 type BaseDbContract interface {
-	Table(table string)					BaseDbContract
-	GetTable()							string
-	Select(fields ...interface{})		BaseDbContract
-	Where(where ...interface{})			BaseDbContract
-	Get()								*Rows
-	GetOne()							*Row
+	Table(table string)									BaseDbContract
+	GetTable()											string
+	Select(fields ...interface{})						BaseDbContract
+	Where(where ...interface{})							BaseDbContract
+	Get()												*Rows
+	GetOne()											*Row
+	Add(addData ...interface{})							(Result,error)
+	Adds (addField []string,addValues ...interface{}) 	(int64,error)
+	Update(updateData ...interface{})					(Result,error)
 }
 
 func (db *BaseDb) Init() error {

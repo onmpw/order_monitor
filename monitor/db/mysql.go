@@ -34,7 +34,8 @@ type Mysql struct {
 	fields				string
 	sql					string
 	where				string
-	result 				[]interface{}
+	stmt				map[string]*Stmt
+	Err 				error
 }
 
 func NewMysqlPool() *MysqlPool {
@@ -55,6 +56,7 @@ func NewMysqlServer() *MysqlServer {
 func NewMysql() *Mysql{
 	return &Mysql{
 		connections: make(map[string]*DB),
+		stmt: make(map[string]*Stmt),
 	}
 }
 
@@ -150,7 +152,7 @@ func (m *Mysql) GetTable() string {
 	return m.currTable
 }
 
-// Select: select field
+// Select: 设置要查找的字段
 func (m *Mysql) Select(fields ...interface{}) BaseDbContract {
 	if len(fields) == 0 {
 		m.fields = "*"
@@ -196,16 +198,17 @@ func (m *Mysql) Where(where ...interface{}) BaseDbContract {
 	return m
 }
 
+// Get: 获取单条结果集
 func (m *Mysql) Get() *Rows {
 	m.sql = "SELECT "+m.fields+" FROM "+m.currTable
 	if len(m.where) > 0 {
 		m.sql += " WHERE "+m.where
 	}
-	fmt.Println(m.sql)
-	stmt,err := m.connector.Prepare(m.sql)
+	stmt,err := m.prepare(m.sql)
 	if err != nil {
 		log.Panic(err.Error())
 	}
+
 	rows, err := stmt.Query()
 	if err != nil {
 		log.Panic(err.Error())
@@ -214,9 +217,10 @@ func (m *Mysql) Get() *Rows {
 	return rows
 }
 
+// GetOne: 获取单条结果集
 func (m *Mysql) GetOne() *Row {
 	m.sql = "SELECT "+m.fields+" FROM "+m.currTable+" WHERE "+m.where
-	stmt,err := m.connector.Prepare(m.sql)
+	stmt,err := m.prepare(m.sql)
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -225,7 +229,132 @@ func (m *Mysql) GetOne() *Row {
 	return row
 }
 
+// Add：添加单条记录
+func (m *Mysql) Add (addData ...interface{}) (Result,error) {
+	var insertValue []interface{}
+	var fields []string
+	for _,data := range addData {
+		v := data.([]interface{})
+		fields = append(fields,v[0].(string))
+		insertValue = append(insertValue,v[1])
+	}
+	m.buildInsertSql(fields)
+	defer m.free()
+
+	return m.insert(insertValue...)
+}
+
+// Adds： 批量添加数据
+func (m *Mysql) Adds (addField []string,addValues ...interface{}) (int64,error){
+	m.buildInsertSql(addField)
+	var lastInsertId int64 = 0
+	var err error = nil
+	for _,value := range addValues {
+		result,err := m.insert(value.([]interface{})...)
+		if err != nil {
+			break
+		}
+		lastInsertId , err = result.LastInsertId()
+	}
+
+	return lastInsertId, err
+
+}
+
+// Update: 更新记录
+func (m *Mysql) Update(updateData ...interface{})(Result,error) {
+	var updateValue []interface{}
+	var fields []string
+	for _,data := range updateData {
+		v := data.([]interface{})
+		fields = append(fields,v[0].(string))
+		updateValue = append(updateValue,v[1])
+	}
+	m.buildInsertSql(fields)
+	defer m.free()
+
+	return m.update(updateValue...)
+}
+
+func (m *Mysql) prepare(sql string) (*Stmt,error) {
+	if stmt,ok := m.stmt[m.sql]; ok {
+		return stmt,nil
+	}
+	stmt,err := m.connector.Prepare(m.sql)
+	if err == nil {
+		m.stmt[m.sql] = stmt
+	}
+	return stmt,err
+}
+
+func (m *Mysql) buildInsertSql(fields []string){
+	var insertField string
+	var insertPrepare string
+	m.sql = "INSERT INTO "+m.currTable+"("
+	for _,field := range fields {
+		if len(insertField) != 0 {
+			insertField += ","
+			insertPrepare += ","
+		}
+		insertField += "`"+field+"`"
+		insertPrepare += "?"
+	}
+	m.sql += insertField+") VALUES ("+insertPrepare+")"
+}
+
+func (m *Mysql) buildUpdateSql(fields []string){
+	var update string
+	m.sql = "UPDATE "+m.currTable+" SET "
+	for _,field := range fields {
+		if len(update) != 0 {
+			update += ","
+		}
+		update += "`"+field+"`=?"
+	}
+	m.sql += update + m.where
+}
+
+func (m Mysql) insert (addValue ...interface{}) (Result,error){
+	stmt,err := m.prepare(m.sql)
+	if err != nil {
+		m.Err = err
+		return nil,err
+	}
+
+	result , err := stmt.Exec(addValue...)
+	if err != nil {
+		m.Err = err
+		return nil,err
+	}
+	return result, nil
+}
+
+func (m Mysql) update (updateValue ...interface{}) (Result,error){
+	stmt,err := m.prepare(m.sql)
+	if err != nil {
+		m.Err = err
+		return nil,err
+	}
+
+	result , err := stmt.Exec(updateValue...)
+	if err != nil {
+		m.Err = err
+		return nil,err
+	}
+	return result, nil
+}
+
 func (m *Mysql) free() bool {
+	for _,stmt := range m.stmt {
+		err := stmt.Close()
+		if err != nil {
+			break
+		}
+	}
+	m.stmt = make(map[string]*Stmt)
+	m.sql = ""
+	m.currTable = ""
+
 	server := reflect.ValueOf(Db.dbServers[DriverName]).Interface().(*MysqlServer)
 
 	server.SetHandle()

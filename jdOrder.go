@@ -167,14 +167,17 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	var user User
+	/*var user User
 	rows := db.Db.Connector().Table("jiyi_user_info").Select("id","name","mobile").Where([]interface{}{[]interface{}{"id",17976}}...).GetOne()
 	err = rows.Scan([]interface{}{&user.id,&user.name,&user.mobile}...)
-	fmt.Println(user)
+	fmt.Println(user)*/
 	/*for rows.Next() {
 		err = rows.Scan([]interface{}{&user.id,&user.name,&user.mobile}...)
 		fmt.Println(user.id)
 	}*/
+	//lastInsertId , err := db.Db.Connector().Table("order_info").Adds([]string{"oid","username"},[]interface{}{[]interface{}{3423312,"jiyi10"},[]interface{}{3423313,"jiyi11"}}...)
+	result , err := db.Db.Connector().Table("order_info").Where([]interface{}{[]interface{}{"id",16}}...).Update([]interface{}{[]interface{}{"oid",34233111},[]interface{}{"username","jiyi112"}}...)
+	fmt.Println(result.RowsAffected())
 
 	return
 

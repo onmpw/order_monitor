@@ -61,14 +61,17 @@ func (config *Ini) Load() error{
 
 	var commentFlag = false
 
+	var lineStart = true
+
 	for _,char := range b {
 		// # 作为注释
-		if char == byte(commentIdentifier) {
+		if char == byte(commentIdentifier) && lineStart {
 			commentFlag = true // 表示此行是注释行
 			continue
 		}
 
 		if char == byte('\n') {
+			lineStart = true
 			if commentFlag {
 				// 表示刚刚读取的那一行是注释行，下面过程不用处理直接重置 byteStr
 				byteStr = byteStr[0:0]
@@ -100,6 +103,7 @@ func (config *Ini) Load() error{
 			continue
 		}
 		if !commentFlag { // 注释行的字符不作处理
+			lineStart = false
 			byteStr = append(byteStr, char)
 		}
 	}
