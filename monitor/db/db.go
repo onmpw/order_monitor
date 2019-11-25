@@ -2,12 +2,15 @@ package db
 
 import (
 	. "database/sql"
+	"fmt"
+	"sync"
 )
 
 var Db      = &BaseDb{}
 const DefaultConnection = "production"   // 默认的连接名称  需要在配置文件(config.go)中添加其相应的配置项
 
 type BaseDb struct {
+	sync.RWMutex
 	GetConnection 	func(source string) BaseDbContract
 	dbServers   	map[string]BaseDbServer
 	dataSource		map[string]string
@@ -66,12 +69,15 @@ func (db *BaseDb) getDataSource(connection string) string {
 		port = ":"+val
 	}
 	source := localConn["username"]+":"+localConn["password"]+"@tcp("+localConn["host"]+port+")/"+localConn["database"]
+	db.Lock()
 	db.dataSource[connection] = source
+	db.Unlock()
 
 	return source
 }
 
 func (db *BaseDb) Connector() BaseDbContract {
 	Connect := db.GetConnection(DefaultConnection)
+	fmt.Println(Connect)
 	return Connect
 }

@@ -1,11 +1,13 @@
 package db
 
 import (
+	"context"
 	. "database/sql"
 	"fmt"
 	"log"
 	"reflect"
 	"sync"
+	"time"
 )
 
 const DriverName = "mysql"
@@ -13,7 +15,10 @@ const DriverName = "mysql"
 type MysqlPool struct {
 	sync.RWMutex
 
+	// 指向队列头
 	head	int
+	// 指向队列尾
+	tail	int
 	//	当前链接池的链接数
 	num 	int
 	// 	可容纳的链接数
@@ -41,9 +46,10 @@ type Mysql struct {
 func NewMysqlPool() *MysqlPool {
 	return &MysqlPool{
 		head:    0,
+		tail:	0,
 		num:   0,
 		space: 10,
-		pool:    nil,
+		pool: make([]*Mysql,0),
 	}
 }
 
@@ -61,12 +67,27 @@ func NewMysql() *Mysql{
 }
 
 func (ms *MysqlServer) GetHandle() *Mysql {
-	var m *Mysql
-	ms.pool.RLock()
-	m = ms.pool.pop()
-	ms.pool.RUnlock()
-	return m
+	var mysql *Mysql
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		return nil
+	}
+	for mysql == nil {
+		mysql = ms.pool.pop()
+	}
+
+	return mysql
 }
+
+func (ms *MysqlServer) SetHandle(m *Mysql) bool {
+	ms.pool.Lock()
+	ok := ms.pool.push(m)
+	ms.pool.Unlock()
+	return ok
+}
+
 
 func (ms *MysqlServer) CheckDriverName(connection string) bool {
 	localConn := connections[connection]
@@ -96,44 +117,42 @@ func (ms *MysqlServer) Connection(connection string) BaseDbContract {
 	return m
 }
 
-func (ms *MysqlServer) SetHandle() bool {
-	ms.pool.Lock()
-	ok := ms.pool.push()
-	ms.pool.Unlock()
-	return ok
-}
-
 // pop : 出队列
 func (pool *MysqlPool) pop() *Mysql {
 	var m *Mysql
+	pool.RLock()
 	if pool.num == 0 {
 		m = NewMysql()
 		pool.num++
-		pool.pool = append(pool.pool,m)
+		pool.RUnlock()
+		return m
 	}
 
-	if pool.head < pool.num {
+	if pool.head < pool.tail {
 		m = pool.pool[pool.head]
-		pool.head++
+		pool.pool = append(pool.pool[:pool.head],pool.pool[pool.head+1:]...)
+		pool.tail = len(pool.pool)
+		pool.RUnlock()
 		return m
 	}
 
 	if pool.num < pool.space {
 		m = NewMysql()
 		pool.num++
-		pool.pool = append(pool.pool,m)
-		pool.head++
+		pool.RUnlock()
 		return m
 	}
+	pool.RUnlock()
 	return nil
 }
 
 // push : 入队列
-func (pool *MysqlPool) push() bool {
-	if pool.head == 0 || pool.num == 0{
+func (pool *MysqlPool) push(m *Mysql) bool {
+	if pool.num == 0{
 		return false
 	}
-	pool.head--
+	pool.pool = append(pool.pool,m)
+	pool.tail = len(pool.pool)
 
 	return true
 }
@@ -257,6 +276,8 @@ func (m *Mysql) Adds (addField []string,addValues ...interface{}) (int64,error){
 		lastInsertId , err = result.LastInsertId()
 	}
 
+	m.free()
+
 	return lastInsertId, err
 
 }
@@ -357,7 +378,7 @@ func (m *Mysql) free() bool {
 
 	server := reflect.ValueOf(Db.dbServers[DriverName]).Interface().(*MysqlServer)
 
-	server.SetHandle()
+	server.SetHandle(m)
 
 	return true
 

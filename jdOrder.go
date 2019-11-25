@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -161,7 +162,17 @@ type User struct{
 }
 
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
+	select {
+	case <-time.After(1 * time.Second):
+		fmt.Println("overslept")
+	case <-ctx.Done():
+		fmt.Println(ctx.Err()) // prints "context deadline exceeded"
+	}
+
+	return
 	err := monitor.Init()
 	err = db.Db.Init()
 	if err != nil {
@@ -176,8 +187,25 @@ func main() {
 		fmt.Println(user.id)
 	}*/
 	//lastInsertId , err := db.Db.Connector().Table("order_info").Adds([]string{"oid","username"},[]interface{}{[]interface{}{3423312,"jiyi10"},[]interface{}{3423313,"jiyi11"}}...)
-	result , err := db.Db.Connector().Table("order_info").Where([]interface{}{[]interface{}{"id",16}}...).Update([]interface{}{[]interface{}{"oid",34233111},[]interface{}{"username","jiyi112"}}...)
-	fmt.Println(result.RowsAffected())
+	var finishChan = make(chan int,1)
+	var num = 12
+	var finishedNum = 0
+	for i := 0; i< num; i++ {
+		go func() {
+			lastInsertId , _ := db.Db.Connector().Table("order_info").Adds([]string{"oid","username"},[]interface{}{[]interface{}{3423316+i,"jiyia"+string(i)},[]interface{}{3423316+i+1,"jiyib"+string(i)}}...)
+			finishChan <- 1
+			fmt.Println(lastInsertId)
+		}()
+	}
+	for {
+		select {
+		case <- finishChan :
+			finishedNum++
+			if finishedNum == num {
+				return
+			}
+		}
+	}
 
 	return
 
