@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"database/sql"
 	"fmt"
 	"monitor/monitor/config"
 	"sync"
@@ -9,12 +8,6 @@ import (
 )
 
 var (
-	DriverName        = "mysql"
-	DataSourceName    = ""
-	JdDataSourceName  = ""
-	UcDataSourceName  = ""
-	LocalDataSourceName  = ""
-
 	DateFormat  = "2006-01-02 15:04:05"
 	TypeNum           = 7
 
@@ -25,14 +18,6 @@ var (
 
 	//companyOrder = make(map[int]*myOrderInfo)
 	SafeCompanyOrder *safeMap
-
-	Db *sql.DB
-	LocalDb *sql.DB
-
-	CountStmt *sql.Stmt
-	UnusualCountStmt *sql.Stmt
-
-	InsertStmt *sql.Stmt
 )
 
 type Order interface {
@@ -116,9 +101,7 @@ func Init() error {
 	return nil
 }
 
-/**
- * 等待goroutine 执行完
- */
+// 等待goroutine 执行完
 func Wait(ch <-chan int, num int) {
 
 	for i := 0; i < num; i++ {
@@ -126,29 +109,7 @@ func Wait(ch <-chan int, num int) {
 	}
 }
 
-/**
- * 关闭数据库链接
- */
-func CloseDb(db *sql.DB) {
-	err := db.Close()
-	if err != nil {
-		panic(err.Error())
-	}
-}
-
-/**
- * 关闭预处理context
- */
-func CloseStmt(stmt *sql.Stmt) {
-	err := stmt.Close()
-	if err != nil {
-		panic(err.Error())
-	}
-}
-
-/**
- * 计算时间
- */
+// 计算时间
 func (t *MyTime) CalculateTime() {
 	now := time.Now()
 	// 计算时间区间

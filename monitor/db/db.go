@@ -30,6 +30,7 @@ type BaseDbContract interface {
 	Add(addData ...interface{})							(Result,error)
 	Adds (addField []string,addValues ...interface{}) 	(int64,error)
 	Update(updateData ...interface{})					(Result,error)
+	Count()												(int64,error)
 }
 
 func (db *BaseDb) Init() error {

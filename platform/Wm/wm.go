@@ -1,10 +1,10 @@
 package Wm
 
 import (
-	"database/sql"
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
+	"monitor/monitor/db"
 )
 
 var wmChan  = make(chan int, 1)
@@ -17,36 +17,22 @@ var Order = monitor.MyOrderInfo{
  */
 func getWmOriginData() (<-chan monitor.Jdp, error) {
 	var myT monitor.MyTime
-	wmDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
 
-	if err != nil {
-		return nil, err
-	}
-
-	defer monitor.CloseDb(wmDb)
-
-	err = wmDb.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	stmtOut, err := wmDb.Prepare("select id,oid,response,cid,created,modified,`type`,sid from jdp_weimob_order_trade where modified>=? and modified<=?")
-	if err != nil {
-		return nil, err
-	}
-	defer monitor.CloseStmt(stmtOut)
-
-	// 计算时间
 	myT.CalculateTime()
+	var err error
+
+	where := []interface{}{
+		[]interface{}{"modified",">=",myT.Start},
+		[]interface{}{"modified","<=",myT.End},
+	}
+	fields := []interface{}{
+		"id","oid","response","cid","created","modified","type","sid",
+	}
+	rows := db.Db.Connector().Table("jdp_weimob_order_trade").Select(fields...).Where(where...).Get()
 
 	var wmJdp monitor.Jdp
 
 	var inter = monitor.RowData{&wmJdp.Id, &wmJdp.Oid, &wmJdp.Response, &wmJdp.CompanyId, &wmJdp.Created, &wmJdp.Modified, &wmJdp.OrderType, &wmJdp.ShopId}
-
-	rows, err := stmtOut.Query(myT.Start, myT.End)
-	if err != nil {
-		return nil, err
-	}
 
 	oriChannel := make(chan monitor.Jdp)
 

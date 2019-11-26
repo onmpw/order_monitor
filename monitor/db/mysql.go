@@ -48,7 +48,7 @@ func NewMysqlPool() *MysqlPool {
 		head:    0,
 		tail:	0,
 		num:   0,
-		space: 10,
+		space: 15,
 		pool: make([]*Mysql,0),
 	}
 }
@@ -75,6 +75,7 @@ func (ms *MysqlServer) GetHandle() *Mysql {
 		mysql = m
 		break
 	case <-ctx.Done():
+		mysql = nil
 		break
 	}
 	return mysql
@@ -105,6 +106,7 @@ func (ms *MysqlServer) Connection(connection string) BaseDbContract {
 	// 检测是否已经链接
 	if conn, ok := m.connections[connection]; ok {
 		m.connector = conn
+		return m
 	}
 	dataSource := Db.getDataSource(connection)
 	db ,err := Open(DriverName,dataSource)
@@ -181,7 +183,7 @@ func (m *Mysql) Select(fields ...interface{}) BaseDbContract {
 		m.fields = "*"
 	}else {
 		for _,field := range fields {
-			var f = fmt.Sprintf("`%v`",field)
+			var f = fmt.Sprintf("%v",field)
 			if len(m.fields) != 0 {
 				m.fields += ","
 			}
@@ -228,6 +230,7 @@ func (m *Mysql) Get() *Rows {
 		m.sql += " WHERE "+m.where
 	}
 	stmt,err := m.prepare(m.sql)
+
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -299,6 +302,25 @@ func (m *Mysql) Update(updateData ...interface{})(Result,error) {
 	defer m.free()
 
 	return m.update(updateValue...)
+}
+
+// Count: 获取指定条件下记录数量
+func (m *Mysql) Count() (int64,error){
+	m.sql = "SELECT count(*) FROM " + m.currTable
+	if len(m.where) > 0 {
+		m.sql += " WHERE "+ m.where
+	}
+	stmt,err := m.prepare(m.sql)
+	if err != nil {
+		return 0,err
+	}
+	row := stmt.QueryRow()
+
+	var count int64
+	err = row.Scan([]interface{}{&count}...)
+
+	m.free()
+	return count,nil
 }
 
 func (m *Mysql) prepare(sql string) (*Stmt,error) {
@@ -379,6 +401,8 @@ func (m *Mysql) free() bool {
 	m.stmt = make(map[string]*Stmt)
 	m.sql = ""
 	m.currTable = ""
+	m.where = ""
+	m.fields = ""
 
 	server := reflect.ValueOf(Db.dbServers[DriverName]).Interface().(*MysqlServer)
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
@@ -23,7 +22,7 @@ var shopChan    = make(chan int, 1)
  * 获取店铺信息
  */
 func getShopInfo() (<-chan monitor.ShopInfo, error) {
-	shopDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
+	/*shopDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +48,17 @@ func getShopInfo() (<-chan monitor.ShopInfo, error) {
 	rows, err := stmtOut.Query(now)
 	if err != nil {
 		return nil, err
-	}
+	}*/
+	now := time.Unix(time.Now().Unix(), 0).Format(monitor.DateFormat)
 
+	var shop monitor.ShopInfo
+	var inter = monitor.RowData{&shop.ShopId, &shop.Name, &shop.Alias, &shop.Nick, &shop.ShopType}
+	where := []interface{}{
+		[]interface{}{"is_delete",0},
+		[]interface{}{"end_date",">",now},
+	}
+	var err error
+	rows := db.Db.Connector().Table("shop_taobao").Select("sid","name","alias","nick","type").Where(where...).Get()
 	shopOri := make(chan monitor.ShopInfo)
 	go func() {
 		for rows.Next() {
@@ -70,7 +78,7 @@ func getShopInfo() (<-chan monitor.ShopInfo, error) {
  * 获取公司信息
  */
 func getCompanyInfo() (<-chan monitor.CompanyInfo, error) {
-	ucDb, err := sql.Open(monitor.DriverName, monitor.UcDataSourceName)
+	/*ucDb, err := sql.Open(monitor.DriverName, monitor.UcDataSourceName)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +102,12 @@ func getCompanyInfo() (<-chan monitor.CompanyInfo, error) {
 	rows, err := stmtOut.Query()
 	if err != nil {
 		return nil, err
-	}
+	}*/
+	var company monitor.CompanyInfo
+	var inter = monitor.RowData{&company.Id, &company.Name}
+
+	var err error
+	rows := db.Db.GetConnection("uc_production").Table("company_detail").Select("id","name").Where([]interface{}{[]interface{}{"is_delete",0}}...).Get()
 
 	companyOri := make(chan monitor.CompanyInfo)
 	go func() {
@@ -148,69 +161,12 @@ func ParseShop() {
 	}()
 }
 
-type user struct {
-	id 		int
-	name 	string
-	mobile 	string
-}
-
-type User struct{
-	id		int
-	name 	string
-	mobile 	string
-}
-
 func main() {
-	/*ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	select {
-	case <-time.After(1 * time.Second):
-		fmt.Println("overslept")
-	case <-ctx.Done():
-		fmt.Println(ctx.Err()) // prints "context deadline exceeded"
-	}
-
-	return*/
 	err := monitor.Init()
 	err = db.Db.Init()
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	/*var user User
-	rows := db.Db.Connector().Table("jiyi_user_info").Select("id","name","mobile").Where([]interface{}{[]interface{}{"id",17976}}...).GetOne()
-	err = rows.Scan([]interface{}{&user.id,&user.name,&user.mobile}...)
-	fmt.Println(user)*/
-	/*for rows.Next() {
-		err = rows.Scan([]interface{}{&user.id,&user.name,&user.mobile}...)
-		fmt.Println(user.id)
-	}*/
-	//lastInsertId , err := db.Db.Connector().Table("order_info").Adds([]string{"oid","username"},[]interface{}{[]interface{}{3423312,"jiyi10"},[]interface{}{3423313,"jiyi11"}}...)
-	var finishChan = make(chan int,1)
-	var num = 12
-	var finishedNum = 0
-	for i := 0; i< num; i++ {
-		go func() {
-			lastInsertId , _ := db.Db.Connector().Table("order_info").Adds([]string{"oid","username"},[]interface{}{[]interface{}{3423316+i,"jiyia"+string(i)},[]interface{}{3423316+i+1,"jiyib"+string(i)}}...)
-			finishChan <- 1
-			fmt.Println(lastInsertId)
-		}()
-	}
-	for {
-		select {
-		case <- finishChan :
-			finishedNum++
-			if finishedNum == num {
-				return
-			}
-		}
-	}
-
-	return
-
-	// 解析数据库连接信息
-	_ = Tool.ParseDatabaseInfo()
-
 
 	monitor.SafeCompanyOrder = monitor.NewSafeMap()
 
@@ -246,5 +202,4 @@ func main() {
 
 	//}
 	Tool.Close()
-
 }

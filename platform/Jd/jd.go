@@ -1,10 +1,10 @@
 package Jd
 
 import (
-	"database/sql"
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
+	"monitor/monitor/db"
 )
 
 var jdChan = make(chan int, 1)
@@ -17,36 +17,21 @@ var Order = monitor.MyOrderInfo{
  */
 func getJdOriginData() (<-chan monitor.Jdp, error) {
 	var myT monitor.MyTime
-	jdDb, err := sql.Open(monitor.DriverName, monitor.JdDataSourceName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer monitor.CloseDb(jdDb)
-
-	err = jdDb.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	stmtOut, err := jdDb.Prepare("select id,oid,response,cid,created,modified,`type`,sid from jdp_jd_order_trade where modified>=? and modified<=?")
-	if err != nil {
-		return nil, err
-	}
-	defer monitor.CloseStmt(stmtOut)
-
 	// 计算时间
 	myT.CalculateTime()
+	var err error
 
+	where := []interface{}{
+		[]interface{}{"modified",">=",myT.Start},
+		[]interface{}{"modified","<=",myT.End},
+	}
+	fields := []interface{}{
+		"id","oid","response","cid","created","modified","type","sid",
+	}
+	rows := db.Db.GetConnection("jd_production").Table("jdp_jd_order_trade").Select(fields...).Where(where...).Get()
 	var jdJdp monitor.Jdp
 
 	var inter = monitor.RowData{&jdJdp.Id, &jdJdp.Oid, &jdJdp.Response, &jdJdp.CompanyId, &jdJdp.Created, &jdJdp.Modified, &jdJdp.OrderType, &jdJdp.ShopId}
-
-	rows, err := stmtOut.Query(myT.Start, myT.End)
-	if err != nil {
-		return nil, err
-	}
 
 	oriChannel := make(chan monitor.Jdp)
 
