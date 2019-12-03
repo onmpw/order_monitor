@@ -34,12 +34,6 @@ func getAlibbOriginData() (<-chan monitor.Jdp, error) {
 	var alibbJdp monitor.Jdp
 	var inter = monitor.RowData{&alibbJdp.Id,&alibbJdp.Oid,&alibbJdp.Response,&alibbJdp.CompanyId,&alibbJdp.Created,&alibbJdp.Modified,&alibbJdp.OrderType,&alibbJdp.ShopId}
 
-	/*rows, err := stmtOut.Query(myT.Start,myT.End)
-
-	if err != nil {
-		return nil,err
-	}*/
-
 	oriChannel := make(chan monitor.Jdp)
 
 	go func(){

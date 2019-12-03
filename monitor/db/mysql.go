@@ -68,6 +68,8 @@ func NewMysql() *Mysql{
 
 func (ms *MysqlServer) GetHandle() *Mysql {
 	var mysql *Mysql
+
+	// 设定10秒 如果超过10秒还没有其他的Mysql连接对象被释放，则返回空
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	select {

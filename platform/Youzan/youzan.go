@@ -35,10 +35,6 @@ func getYouZanOriginData() (<-chan monitor.Jdp, error) {
 
 	var inter = monitor.RowData{&youzanJdp.Id, &youzanJdp.Oid, &youzanJdp.Response, &youzanJdp.CompanyId, &youzanJdp.Created, &youzanJdp.Modified, &youzanJdp.OrderType, &youzanJdp.ShopId}
 
-	/*rows, err := stmtOut.Query(myT.Start, myT.End)
-	if err != nil {
-		return nil, err
-	}*/
 	oriChannel := make(chan monitor.Jdp)
 
 	go func() {

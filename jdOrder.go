@@ -7,6 +7,7 @@ import (
 	"monitor/Tool"
 	"monitor/monitor"
 	"monitor/monitor/db"
+	"monitor/monitor/model"
 	"monitor/platform/Alibb"
 	"monitor/platform/Jd"
 	"monitor/platform/Pdd"
@@ -22,33 +23,6 @@ var shopChan    = make(chan int, 1)
  * 获取店铺信息
  */
 func getShopInfo() (<-chan monitor.ShopInfo, error) {
-	/*shopDb, err := sql.Open(monitor.DriverName, monitor.DataSourceName)
-	if err != nil {
-		return nil, err
-	}
-
-	defer monitor.CloseDb(shopDb)
-
-	err = shopDb.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	stmtOut, err := shopDb.Prepare("select sid,name,alias,nick,`type` from shop_taobao where is_delete=0 and end_date > ?")
-	if err != nil {
-		return nil, err
-	}
-
-	defer monitor.CloseStmt(stmtOut)
-
-	var shop monitor.ShopInfo
-	var inter = monitor.RowData{&shop.ShopId, &shop.Name, &shop.Alias, &shop.Nick, &shop.ShopType}
-
-	now := time.Unix(time.Now().Unix(), 0).Format(monitor.DateFormat)
-	rows, err := stmtOut.Query(now)
-	if err != nil {
-		return nil, err
-	}*/
 	now := time.Unix(time.Now().Unix(), 0).Format(monitor.DateFormat)
 
 	var shop monitor.ShopInfo
@@ -78,31 +52,6 @@ func getShopInfo() (<-chan monitor.ShopInfo, error) {
  * 获取公司信息
  */
 func getCompanyInfo() (<-chan monitor.CompanyInfo, error) {
-	/*ucDb, err := sql.Open(monitor.DriverName, monitor.UcDataSourceName)
-	if err != nil {
-		return nil, err
-	}
-
-	defer monitor.CloseDb(ucDb)
-
-	err = ucDb.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	stmtOut, err := ucDb.Prepare("select id,name from `company_detail` where `is_delete`=0")
-	if err != nil {
-		return nil, err
-	}
-	defer monitor.CloseStmt(stmtOut)
-
-	var company monitor.CompanyInfo
-	var inter = monitor.RowData{&company.Id, &company.Name}
-
-	rows, err := stmtOut.Query()
-	if err != nil {
-		return nil, err
-	}*/
 	var company monitor.CompanyInfo
 	var inter = monitor.RowData{&company.Id, &company.Name}
 
@@ -160,8 +109,15 @@ func ParseShop() {
 		}
 	}()
 }
+type User struct {
+	id 		int64
+	name 	string
+	mobile	string
+}
 
 func main() {
+	model.RegisterModel(new(User))
+	return
 	err := monitor.Init()
 	err = db.Db.Init()
 	if err != nil {
