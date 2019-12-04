@@ -180,7 +180,7 @@ func (m *Mysql) GetTable() string {
 }
 
 // Select: 设置要查找的字段
-func (m *Mysql) Select(fields ...interface{}) BaseDbContract {
+func (m *Mysql) Select(fields ...string) BaseDbContract {
 	if len(fields) == 0 {
 		m.fields = "*"
 	}else {

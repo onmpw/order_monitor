@@ -23,7 +23,7 @@ type BaseDbServer interface {
 type BaseDbContract interface {
 	Table(table string)									BaseDbContract
 	GetTable()											string
-	Select(fields ...interface{})						BaseDbContract
+	Select(fields ...string)							BaseDbContract
 	Where(where ...interface{})							BaseDbContract
 	Get()												*Rows
 	GetOne()											*Row

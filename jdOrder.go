@@ -115,8 +115,13 @@ type User struct {
 	mobile	string
 }
 
+func (u *User) TableName() string {
+	return "user"
+}
+
 func main() {
 	model.RegisterModel(new(User))
+	model.Read(new(User))
 	return
 	err := monitor.Init()
 	err = db.Db.Init()

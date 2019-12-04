@@ -25,7 +25,7 @@ func getPddOriginData() (<-chan monitor.Jdp, error) {
 		[]interface{}{"modified",">=",myT.Start},
 		[]interface{}{"modified","<=",myT.End},
 	}
-	fields := []interface{}{
+	fields := []string{
 		"id","oid","response","cid","created","modified","type","sid",
 	}
 	rows := db.Db.Connector().Table("jdp_pdd_order_trade").Select(fields...).Where(where...).Get()
