@@ -6,6 +6,7 @@ import (
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
+	"monitor/monitor/config"
 	"monitor/monitor/db"
 	"monitor/monitor/model"
 	"monitor/platform/Alibb"
@@ -110,18 +111,25 @@ func ParseShop() {
 	}()
 }
 type User struct {
-	id 		int64
+	id 		int
 	name 	string
 	mobile	string
+	address string
 }
 
 func (u *User) TableName() string {
-	return "user"
+	return "user_info"
 }
 
 func main() {
+	_ = config.Init()
+	_ = db.Db.Init()
+	var users []*User
 	model.RegisterModel(new(User))
-	model.Read(new(User))
+
+	num,_ := model.Read(new(User)).GetAll(&users)
+	fmt.Println(num)
+
 	return
 	err := monitor.Init()
 	err = db.Db.Init()

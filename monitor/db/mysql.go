@@ -232,12 +232,12 @@ func (m *Mysql) Get() *Rows {
 		m.sql += " WHERE "+m.where
 	}
 	stmt,err := m.prepare(m.sql)
-
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
 	rows, err := stmt.Query()
+	fmt.Println(m.sql)
 	if err != nil {
 		log.Panic(err.Error())
 	}

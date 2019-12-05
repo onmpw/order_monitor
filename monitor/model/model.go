@@ -12,14 +12,11 @@ var (
 	}
 )
 
-type field struct {
-	name 			string
-}
-
 type modelInfo struct {
 	modelName		string
 	model			interface{}
 	fields			[]string
+	table 			string
 	connection 		string
 
 }
@@ -67,6 +64,7 @@ func register(model interface{}) {
 
 	modelInfo := newModelInfo(sv)
 	modelInfo.model = model
+	modelInfo.table = table
 
 	modelContainer.add(table,modelInfo)
 
@@ -104,11 +102,13 @@ func (m *models)add(table string,model *modelInfo) bool {
 	return true
 }
 
-func Read(model interface{}) {
+func Read(model interface{}) ReaderContract {
 	mi ,ok := modelContainer.fetchModel(model,true)
 	if !ok {
 		panic(fmt.Errorf("model `%s` has not been registered！", reflect.Indirect(reflect.ValueOf(model)).Type().Name()))
 	}
+	r := new(Reader)
 
-	fmt.Println(mi.modelName)
+	r.model = mi
+	return r
 }
