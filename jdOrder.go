@@ -114,20 +114,30 @@ type User struct {
 	id 		int
 	name 	string
 	mobile	string
-	address string
+	email string
 }
 
 func (u *User) TableName() string {
-	return "user_info"
+	return "user"
 }
 
+type OrderInfo struct {
+	id 			int
+	oid 		string
+	username 	string
+}
+func (u *OrderInfo) TableName() string {
+	return "order_info"
+}
 func main() {
 	_ = config.Init()
 	_ = db.Db.Init()
-	var users []*User
-	model.RegisterModel(new(User))
+	//var users []*User
+	var orders	[]*OrderInfo
+	model.RegisterModel(new(User),new(OrderInfo))
 
-	num,_ := model.Read(new(User)).GetAll(&users)
+	//num,_ := model.Read(new(User)).GetAll(&users)
+	num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
 	fmt.Println(num)
 
 	return
