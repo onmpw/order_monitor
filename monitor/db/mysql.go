@@ -237,7 +237,6 @@ func (m *Mysql) Get() *Rows {
 	}
 
 	rows, err := stmt.Query()
-	fmt.Println(m.sql)
 	if err != nil {
 		log.Panic(err.Error())
 	}

@@ -111,14 +111,14 @@ func ParseShop() {
 	}()
 }
 type User struct {
-	id 		int
-	name 	string
-	mobile	string
-	email string
+	Id 		int
+	Name 	string
+	Mobile	string
+	Address string
 }
 
 func (u *User) TableName() string {
-	return "user"
+	return "user_info"
 }
 
 type OrderInfo struct {
@@ -132,13 +132,29 @@ func (u *OrderInfo) TableName() string {
 func main() {
 	_ = config.Init()
 	_ = db.Db.Init()
-	//var users []*User
-	var orders	[]*OrderInfo
+	var users []*User
+	//var orders	[]*OrderInfo
 	model.RegisterModel(new(User),new(OrderInfo))
 
-	//num,_ := model.Read(new(User)).GetAll(&users)
-	num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
+	num,_ := model.Read(new(User)).GetAll(&users)
+
 	fmt.Println(num)
+
+	//num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
+	//fmt.Println(num)
+	/*_ = orm.RegisterDriver("mysql", orm.DRMySQL)
+
+	_= orm.RegisterDataBase("default", "mysql", "root:123456@/myData?charset=utf8")
+
+	orm.RegisterModel(new(User))
+
+	o := orm.NewOrm()
+
+	var users []*User
+	num,_ := o.QueryTable("user_info").Filter("id__gt",20000).All(&users)
+
+	fmt.Println(num)
+	fmt.Println(users[0])*/
 
 	return
 	err := monitor.Init()

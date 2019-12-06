@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"monitor/monitor/db"
 	"reflect"
 )
@@ -25,29 +24,75 @@ func (r *Reader)GetAll(models interface{}) (int64,error) {
 	slice := ind
 
 	m := reflect.New(reflect.ValueOf(r.model.model).Type().Elem())
-	fmt.Println(reflect.Append(slice,m))
 
 
 	where := []interface{}{
-		[]interface{}{"id",">",10},
+		[]interface{}{"id",">",22000},
 	}
 	rows := db.Db.Connector().Table(r.model.table).Select(r.model.fields...).Where(where...).Get()
 
-	refs := make([]interface{},3)
+	refs := make([]interface{},4)
 	for i := range refs {
 		var ref interface{}
 		refs[i] = &ref
 	}
+
+	var count int64 = 0
+
 	for rows.Next() {
 		_ = rows.Scan(refs...)
-		t := reflect.New(m.Elem().FieldByName("id").Type()).Elem()
-		t.Set(reflect.ValueOf(refs[0]).Elem())
-		fmt.Println(t)
-		//fmt.Println(reflect.ValueOf(refs[0]).Elem())
-		fmt.Println(reflect.Indirect(reflect.ValueOf(refs[0])).Interface())
+
+		setColsValue(&m,refs...)
+		slice = reflect.Append(slice,m)
+		count ++
 	}
 
-	return 0,nil
+	ind.Set(slice)
+
+	return count,nil
+}
+
+func setColsValue(ind *reflect.Value,values ...interface{}) {
+
+	fields := ind.Elem()
+
+	for index,val := range values {
+		field := fields.Field(index)
+		setValue(&field,val)
+	}
+}
+
+func setValue(field *reflect.Value,val interface{}){
+
+	v := convertDataType(field,val)
+
+	rv := reflect.ValueOf(v)
+
+	field.Set(rv)
+}
+
+func convertDataType(field *reflect.Value,val interface{}) interface{} {
+	v := reflect.Indirect(reflect.ValueOf(val)).Interface()
+
+	var rv interface{}
+	switch v := v.(type) {
+	case string:
+		rv = v
+	case []byte:
+		rv = string(v)
+	case int64:
+		rv = int(v)
+	}
+
+	/*switch field.Interface().(type) {
+	case int:
+		iv := reflect.ValueOf(val).Elem().Interface().(int64)
+		return int(iv)
+	case string:
+		return s
+	}*/
+
+	return rv
 }
 
 func (r *Reader)GetOne(model interface{}) error {
