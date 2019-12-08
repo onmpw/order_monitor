@@ -122,9 +122,9 @@ func (u *User) TableName() string {
 }
 
 type OrderInfo struct {
-	id 			int
-	oid 		string
-	username 	string
+	Id 			int
+	Oid 		string
+	Username 	string
 }
 func (u *OrderInfo) TableName() string {
 	return "order_info"
@@ -132,13 +132,16 @@ func (u *OrderInfo) TableName() string {
 func main() {
 	_ = config.Init()
 	_ = db.Db.Init()
-	var users []*User
-	//var orders	[]*OrderInfo
+	//var users []*User
+	var orders	[]*OrderInfo
+	var orderEntity *OrderInfo
 	model.RegisterModel(new(User),new(OrderInfo))
 
-	num,_ := model.Read(new(User)).GetAll(&users)
+	num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
+	_ = model.Read(new(OrderInfo)).GetOne(&orderEntity)
 
 	fmt.Println(num)
+	fmt.Println(orderEntity)
 
 	//num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
 	//fmt.Println(num)
