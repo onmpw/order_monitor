@@ -2,18 +2,42 @@ package model
 
 import (
 	"fmt"
+	"log"
 	"monitor/monitor/db"
 	"reflect"
+	"strconv"
 )
 
 type ReaderContract interface {
 	GetAll(models interface{}) (int64, error)
 
 	GetOne(model interface{}) error
+
+	Filter(key string, val ...interface{}) ReaderContract
+
+	Count()						int64
 }
 
 type Reader struct {
-	model *modelInfo
+	model 		*modelInfo
+	where 		[]interface{}
+}
+
+func (r *Reader) Filter(key string, val ...interface{}) ReaderContract {
+
+	if len(val) ==0 || len(val) > 2 {
+		log.Panic(fmt.Errorf("参数 val 数量不能大于2个或者小于1个，当前参数数量为%d",len(val)))
+	}
+
+	var where []interface{}
+	if len(val) == 1 {
+		where = []interface{}{key,"=",val[0]}
+	}else {
+		where = []interface{}{key,val[0],val[1]}
+	}
+
+	r.where = append(r.where,where)
+	return r
 }
 
 func (r *Reader) GetAll(models interface{}) (int64, error) {
@@ -25,10 +49,7 @@ func (r *Reader) GetAll(models interface{}) (int64, error) {
 
 	m := reflect.New(reflect.ValueOf(r.model.model).Type().Elem())
 
-	where := []interface{}{
-		[]interface{}{"id", ">", 10},
-	}
-	rows := db.Db.Connector().Table(r.model.table).Select(r.model.fields...).Where(where...).Get()
+	rows := db.Db.Connector().Table(r.model.table).Select(r.model.fields...).Where(r.where...).Get()
 
 	refs := make([]interface{}, len(r.model.fields))
 	for i := range refs {
@@ -70,19 +91,28 @@ func setValue(field *reflect.Value, val interface{}) {
 }
 
 func convertDataType(field *reflect.Value, val interface{}) interface{} {
-	v := reflect.Indirect(reflect.ValueOf(val)).Interface()
+	vv := reflect.Indirect(reflect.ValueOf(val)).Interface()
+
+	var t int
 
 	var s string
-	switch v := v.(type) {
+	switch v := vv.(type) {
 	case string:
 		s = v
+		t = 1
 	case []byte:
 		s = string(v)
+		t = 1
 	}
 	switch field.Interface().(type) {
 	case int:
-		iv := reflect.ValueOf(val).Elem().Interface().(int64)
-		return int(iv)
+		if t == 0 {
+			iv := reflect.ValueOf(val).Elem().Interface().(int64)
+			return int(iv)
+		}else {
+			iv,_ := strconv.ParseInt(s,0,0)
+			return int(iv)
+		}
 	case string:
 		return s
 	}
@@ -96,9 +126,35 @@ func (r *Reader) GetOne(model interface{}) error {
 
 	obj := reflect.New(reflect.ValueOf(r.model.model).Type().Elem())
 
-	fmt.Println(obj.Elem().NumField())
+	row := db.Db.Connector().Table(r.model.table).Select(r.model.fields...).Where(r.where...).GetOne()
+
+	refs := make([]interface{}, len(r.model.fields))
+	for i := range refs {
+		var ref interface{}
+		refs[i] = &ref
+	}
+
+	err := row.Scan(refs...)
+
+	if err != nil {
+		return err
+	}
+
+	setColsValue(&obj,refs...)
+
 	if ind.CanSet() {
 		ind.Set(obj)
 	}
 	return nil
+}
+
+func (r *Reader) Count() int64 {
+
+	count,err := db.Db.Connector().Table(r.model.table).Where(r.where...).Count()
+
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	return count
 }

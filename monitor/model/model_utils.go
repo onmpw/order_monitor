@@ -1,6 +1,9 @@
 package model
 
-import "reflect"
+import (
+	"reflect"
+	"unicode"
+)
 
 func getTableName(val reflect.Value) string {
 	if method := val.MethodByName("TableName"); method.IsValid() {
@@ -44,6 +47,14 @@ func getConnection(val reflect.Value) string {
 func addFields(model *modelInfo,val reflect.Value) {
 	vt := reflect.Indirect(val).Type()
 	for i:=0 ; i < vt.NumField(); i++ {
-		model.fields = append(model.fields,vt.Field(i).Name)
+		model.fields = append(model.fields,LcFirst(vt.Field(i).Name))
 	}
+}
+
+func LcFirst(str string) string {
+	for i,v := range str {
+		return string(unicode.ToLower(v))+str[i+1:]
+	}
+
+	return ""
 }

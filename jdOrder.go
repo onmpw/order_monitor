@@ -6,7 +6,6 @@ import (
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
-	"monitor/monitor/config"
 	"monitor/monitor/db"
 	"monitor/monitor/model"
 	"monitor/platform/Alibb"
@@ -129,19 +128,26 @@ type OrderInfo struct {
 func (u *OrderInfo) TableName() string {
 	return "order_info"
 }
+
 func main() {
-	_ = config.Init()
-	_ = db.Db.Init()
+	ModelInit()
+	//_ = config.Init()
+	//_ = db.Db.Init()
 	//var users []*User
-	var orders	[]*OrderInfo
-	var orderEntity *OrderInfo
-	model.RegisterModel(new(User),new(OrderInfo))
+	//var userEntity *User
+	//var orders	[]*OrderInfo
+	//var orderEntity *OrderInfo
+	//var trades []*OrderTrade
+	//model.RegisterModel(new(User),new(OrderInfo),new(OrderTrade))
 
-	num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
-	_ = model.Read(new(OrderInfo)).GetOne(&orderEntity)
+	//num,_ := model.Read(new(User)).Filter("id",">",20000).GetAll(&users)
+	//num,_ := model.Read(new(OrderTrade)).Filter("id",">",100).GetAll(&trades)
+	//_ = model.Read(new(User)).Filter("id",22000).GetOne(&userEntity)
+	//count := model.Read(new(User)).Filter("id",">",22000).Count()
 
-	fmt.Println(num)
-	fmt.Println(orderEntity)
+	//fmt.Println(num)
+	//fmt.Println(userEntity)
+	//fmt.Println(count)
 
 	//num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
 	//fmt.Println(num)
@@ -159,7 +165,7 @@ func main() {
 	fmt.Println(num)
 	fmt.Println(users[0])*/
 
-	return
+	//return
 	err := monitor.Init()
 	err = db.Db.Init()
 	if err != nil {
@@ -200,4 +206,8 @@ func main() {
 
 	//}
 	Tool.Close()
+}
+
+func ModelInit() {
+	model.RegisterModel(new(Alibb.OrderTrade),new(Youzan.OrderTrade),new(Pdd.OrderTrade),new(Wm.OrderTrade))
 }

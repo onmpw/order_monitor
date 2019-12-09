@@ -4,7 +4,7 @@ import (
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
-	"monitor/monitor/db"
+	"monitor/monitor/model"
 )
 
 var yzChan      = make(chan int, 1)
@@ -20,31 +20,40 @@ func getYouZanOriginData() (<-chan monitor.Jdp, error) {
 	var myT monitor.MyTime
 
 	myT.CalculateTime()
-	var err error
+	//var err error
 
-	where := []interface{}{
+	/*where := []interface{}{
 		[]interface{}{"modified",">=",myT.Start},
 		[]interface{}{"modified","<=",myT.End},
 	}
 	fields := []string{
 		"id","oid","response","cid","created","modified","type","sid",
 	}
-	rows := db.Db.Connector().Table("jdp_youzan_order_trade").Select(fields...).Where(where...).Get()
+	rows := db.Db.Connector().Table("jdp_youzan_order_trade").Select(fields...).Where(where...).Get()*/
+
+	var trades []*OrderTrade
+
+	num, _ := model.Read(new(OrderTrade)).Filter("modified",">=",myT.Start).Filter("modified","<=",myT.End).GetAll(&trades)
 
 	var youzanJdp monitor.Jdp
 
-	var inter = monitor.RowData{&youzanJdp.Id, &youzanJdp.Oid, &youzanJdp.Response, &youzanJdp.CompanyId, &youzanJdp.Created, &youzanJdp.Modified, &youzanJdp.OrderType, &youzanJdp.ShopId}
+	//var inter = monitor.RowData{&youzanJdp.Id, &youzanJdp.Oid, &youzanJdp.Response, &youzanJdp.CompanyId, &youzanJdp.Created, &youzanJdp.Modified, &youzanJdp.OrderType, &youzanJdp.ShopId}
 
 	oriChannel := make(chan monitor.Jdp)
 
 	go func() {
-		for rows.Next() {
+		for i:=0; i < int(num); i++{
+			Tool.SetOrder(&youzanJdp,trades[i])
+
+			oriChannel <- youzanJdp
+		}
+		/*for rows.Next() {
 			err = rows.Scan(inter...)
 			if err != nil {
 				panic(err.Error())
 			}
 			oriChannel <- youzanJdp
-		}
+		}*/
 		yzChan <- 1
 	}()
 	return oriChannel, nil

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"monitor/monitor"
 	"monitor/monitor/db"
+	"reflect"
 )
 
 func CheckSync(order *monitor.MyOrderInfo, oriChan <-chan monitor.Jdp, quit <-chan int) error {
@@ -104,6 +105,29 @@ func CheckSync(order *monitor.MyOrderInfo, oriChan <-chan monitor.Jdp, quit <-ch
 			return nil
 		}
 	}
+}
+
+func SetOrder(order interface{},oldOrder interface{}){
+	oldOrderValue := reflect.ValueOf(oldOrder)
+	oldOrderInd := reflect.Indirect(oldOrderValue)
+
+	nov := reflect.ValueOf(order)
+	newOrderInd := reflect.Indirect(nov)
+
+	setFieldValue(&newOrderInd,oldOrderInd,"Id","Id")
+	setFieldValue(&newOrderInd,oldOrderInd,"Oid","Oid")
+	setFieldValue(&newOrderInd,oldOrderInd,"Response","Response")
+	setFieldValue(&newOrderInd,oldOrderInd,"CompanyId","Cid")
+	setFieldValue(&newOrderInd,oldOrderInd,"Created","Created")
+	setFieldValue(&newOrderInd,oldOrderInd,"Modified","Modified")
+	setFieldValue(&newOrderInd,oldOrderInd,"OrderType","Type")
+	setFieldValue(&newOrderInd,oldOrderInd,"ShopId","Sid")
+}
+
+func setFieldValue(order *reflect.Value,oldOrder reflect.Value,fieldName string,name string) {
+	field := order.FieldByName(fieldName)
+
+	field.Set(oldOrder.FieldByName(name))
 }
 
 func Close(){
