@@ -47,9 +47,11 @@ func (r *Reader) GetAll(models interface{}) (int64, error) {
 
 	slice := ind
 
-	m := reflect.New(reflect.ValueOf(r.model.model).Type().Elem())
-
-	rows := db.Db.Connector().Table(r.model.table).Select(r.model.fields...).Where(r.where...).Get()
+	connect := db.Db.Connector()
+	if r.model.connection != "" {
+		connect = db.Db.GetConnection(r.model.connection)
+	}
+	rows := connect.Table(r.model.table).Select(r.model.fields...).Where(r.where...).Get()
 
 	refs := make([]interface{}, len(r.model.fields))
 	for i := range refs {
@@ -57,10 +59,13 @@ func (r *Reader) GetAll(models interface{}) (int64, error) {
 		refs[i] = &ref
 	}
 
+
 	var count int64 = 0
 
 	for rows.Next() {
 		_ = rows.Scan(refs...)
+
+		m := reflect.New(reflect.ValueOf(r.model.model).Type().Elem())
 
 		setColsValue(&m, refs...)
 		slice = reflect.Append(slice, m)

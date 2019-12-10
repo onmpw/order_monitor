@@ -24,7 +24,7 @@ type Order interface {
 	ShowOrderInfo()
 }
 
-type SucceedOrder struct {
+type ResultOrder struct {
 	Oid, OrderType, Response, Created, Modified, Reason string
 	CompanyId, ShopId                                   int
 }
@@ -36,34 +36,12 @@ type BadOrder struct {
 
 type MyOrderInfo struct {
 	TotalCount, FailedCount, SucceedCount int
-	FailedOrder                           []BadOrder
-	SucceedOrder                          []SucceedOrder
+	FailedOrder                           []ResultOrder
+	SucceedOrder                          []ResultOrder
 	Platform , PlatformKey                string
 }
 
 type MyOrderInfoArr []MyOrderInfo
-
-func (myOrders MyOrderInfoArr) ShowOrderInfo() {
-	for _, myOrder := range myOrders {
-		fmt.Println(myOrder.Platform, "订单总共：", myOrder.TotalCount, " 成功：", myOrder.SucceedCount, " 失败：", myOrder.FailedCount)
-
-		if myOrder.FailedCount > 0 {
-			for index := 0; index < myOrder.FailedCount; index++ {
-				fmt.Println(myOrder.FailedOrder[index].Oid, myOrder.FailedOrder[index].Reason, " 公司ID：", myOrder.FailedOrder[index].CompanyId, " 公司名称：", CompanyMap[myOrder.FailedOrder[index].CompanyId], " 店铺名称：", ShopMap[myOrder.FailedOrder[index].ShopId], " 店铺ID：", myOrder.FailedOrder[index].ShopId, " 订单类型：", myOrder.FailedOrder[index].OrderType)
-			}
-		}
-	}
-}
-
-type CompanyInfo struct {
-	Id   int
-	Name string
-}
-
-type ShopInfo struct {
-	ShopId                      int
-	Name, Nick, Alias, ShopType string
-}
 
 // 原始数据中的字段
 type Jdp struct {
@@ -89,6 +67,47 @@ func NewSafeMap() *safeMap {
 	sm := new(safeMap)
 	sm.CompanyOrder = make(map[int]*MyOrderInfo)
 	return sm
+}
+
+func (sm *safeMap) NewElement(orderInfo Jdp) {
+	sm.Lock()
+	if _, ok := sm.CompanyOrder[orderInfo.ShopId]; !ok {
+		sm.CompanyOrder[orderInfo.ShopId] = &MyOrderInfo{}
+	}
+	sm.CompanyOrder[orderInfo.ShopId].TotalCount++
+	sm.Unlock()
+}
+
+func (sm *safeMap) SetOrder(order ResultOrder,succeed bool) {
+	sm.Lock()
+	if succeed {
+		sm.setSucceedOrder(order)
+	}else {
+		sm.setFailedOrder(order)
+	}
+	sm.Unlock()
+}
+
+func (sm *safeMap) setFailedOrder(order ResultOrder) {
+	sm.CompanyOrder[order.ShopId].FailedCount++
+	sm.CompanyOrder[order.ShopId].FailedOrder = append(sm.CompanyOrder[order.ShopId].FailedOrder, order)
+}
+
+func (sm *safeMap) setSucceedOrder(order ResultOrder) {
+	sm.CompanyOrder[order.ShopId].SucceedCount++
+	sm.CompanyOrder[order.ShopId].SucceedOrder = append(sm.CompanyOrder[order.ShopId].SucceedOrder, order)
+}
+
+func (myOrders MyOrderInfoArr) ShowOrderInfo() {
+	for _, myOrder := range myOrders {
+		fmt.Println(myOrder.Platform, "订单总共：", myOrder.TotalCount, " 成功：", myOrder.SucceedCount, " 失败：", myOrder.FailedCount)
+
+		if myOrder.FailedCount > 0 {
+			for index := 0; index < myOrder.FailedCount; index++ {
+				fmt.Println(myOrder.FailedOrder[index].Oid, myOrder.FailedOrder[index].Reason, " 公司ID：", myOrder.FailedOrder[index].CompanyId, " 公司名称：", CompanyMap[myOrder.FailedOrder[index].CompanyId], " 店铺名称：", ShopMap[myOrder.FailedOrder[index].ShopId], " 店铺ID：", myOrder.FailedOrder[index].ShopId, " 订单类型：", myOrder.FailedOrder[index].OrderType)
+			}
+		}
+	}
 }
 
 func Init() error {

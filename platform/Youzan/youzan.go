@@ -13,31 +13,17 @@ var Order = monitor.MyOrderInfo{
 	Platform: "有赞", PlatformKey:"YZ",
 }
 
-/**
- * 获取有赞的原始数据
- */
+// 获取有赞的原始数据
 func getYouZanOriginData() (<-chan monitor.Jdp, error) {
 	var myT monitor.MyTime
 
 	myT.CalculateTime()
-	//var err error
-
-	/*where := []interface{}{
-		[]interface{}{"modified",">=",myT.Start},
-		[]interface{}{"modified","<=",myT.End},
-	}
-	fields := []string{
-		"id","oid","response","cid","created","modified","type","sid",
-	}
-	rows := db.Db.Connector().Table("jdp_youzan_order_trade").Select(fields...).Where(where...).Get()*/
 
 	var trades []*OrderTrade
 
 	num, _ := model.Read(new(OrderTrade)).Filter("modified",">=",myT.Start).Filter("modified","<=",myT.End).GetAll(&trades)
 
 	var youzanJdp monitor.Jdp
-
-	//var inter = monitor.RowData{&youzanJdp.Id, &youzanJdp.Oid, &youzanJdp.Response, &youzanJdp.CompanyId, &youzanJdp.Created, &youzanJdp.Modified, &youzanJdp.OrderType, &youzanJdp.ShopId}
 
 	oriChannel := make(chan monitor.Jdp)
 
@@ -47,13 +33,6 @@ func getYouZanOriginData() (<-chan monitor.Jdp, error) {
 
 			oriChannel <- youzanJdp
 		}
-		/*for rows.Next() {
-			err = rows.Scan(inter...)
-			if err != nil {
-				panic(err.Error())
-			}
-			oriChannel <- youzanJdp
-		}*/
 		yzChan <- 1
 	}()
 	return oriChannel, nil

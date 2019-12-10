@@ -19,23 +19,11 @@ func getPddOriginData() (<-chan monitor.Jdp, error) {
 	var myT monitor.MyTime
 
 	myT.CalculateTime()
-	//var err error
-
-	/*where := []interface{}{
-		[]interface{}{"modified",">=",myT.Start},
-		[]interface{}{"modified","<=",myT.End},
-	}
-	fields := []string{
-		"id","oid","response","cid","created","modified","type","sid",
-	}
-	rows := db.Db.Connector().Table("jdp_pdd_order_trade").Select(fields...).Where(where...).Get()*/
 
 	var trades []*OrderTrade
 
 	num, _ := model.Read(new(OrderTrade)).Filter("modified",">=",myT.Start).Filter("modified","<=",myT.End).GetAll(&trades)
 	var pddJdp monitor.Jdp
-
-	//var inter = monitor.RowData{&pddJdp.Id, &pddJdp.Oid, &pddJdp.Response, &pddJdp.CompanyId, &pddJdp.Created, &pddJdp.Modified, &pddJdp.OrderType, &pddJdp.ShopId}
 
 	oriChannel := make(chan monitor.Jdp)
 

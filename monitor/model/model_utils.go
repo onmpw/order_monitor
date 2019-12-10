@@ -41,7 +41,7 @@ func getConnection(val reflect.Value) string {
 		}
 	}
 
-	return "production"
+	return ""
 }
 
 func addFields(model *modelInfo,val reflect.Value) {

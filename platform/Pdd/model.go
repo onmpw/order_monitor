@@ -11,7 +11,6 @@ type OrderTrade struct {
 	Sid 			int
 }
 
-
 func (o *OrderTrade) TableName() string {
 	return "jdp_pdd_order_trade"
 }

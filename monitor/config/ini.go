@@ -24,7 +24,7 @@ func Init() error{
 func NewIni() *Ini {
 	Conf = &Ini{
 		Config: make(map[string]string),
-		configFilePath: "./",
+		configFilePath: "/etc/",
 	}
 
 	return Conf

@@ -10,8 +10,6 @@ type OrderTrade struct {
 	Type 			string
 	Sid 			int
 }
-//type OrderTrade monitor.Jdp
-
 
 func (o *OrderTrade) TableName() string {
 	return "jdp_alibb_order_trade"

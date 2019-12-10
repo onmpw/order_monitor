@@ -19,28 +19,43 @@ import (
 var companyChan = make(chan int, 1)
 var shopChan    = make(chan int, 1)
 
-/**
- * 获取店铺信息
- */
-func getShopInfo() (<-chan monitor.ShopInfo, error) {
+type CompanyDetail struct {
+	Id 			int
+	Name 		string
+}
+
+func (c *CompanyDetail) TableName() string {
+	return "company_detail"
+}
+
+func (c *CompanyDetail) Connection() string {
+	return "uc_production"
+}
+
+
+type ShopInfo struct {
+	Sid 		int
+	Name 		string
+	Alias 		string
+	Nick		string
+	Type 		string
+}
+
+func (s *ShopInfo) TableName() string {
+	return "shop_taobao"
+}
+
+// 获取店铺信息
+func getShopInfo() (<-chan ShopInfo, error) {
 	now := time.Unix(time.Now().Unix(), 0).Format(monitor.DateFormat)
 
-	var shop monitor.ShopInfo
-	var inter = monitor.RowData{&shop.ShopId, &shop.Name, &shop.Alias, &shop.Nick, &shop.ShopType}
-	where := []interface{}{
-		[]interface{}{"is_delete",0},
-		[]interface{}{"end_date",">",now},
-	}
-	var err error
-	rows := db.Db.Connector().Table("shop_taobao").Select("sid","name","alias","nick","type").Where(where...).Get()
-	shopOri := make(chan monitor.ShopInfo)
+	shopOri := make(chan ShopInfo)
+
+	var trades []*ShopInfo
+	num , _ := model.Read(new(ShopInfo)).Filter("is_delete",0).Filter("end_date",">",now).GetAll(&trades)
 	go func() {
-		for rows.Next() {
-			err = rows.Scan(inter...)
-			if err != nil {
-				panic(err.Error())
-			}
-			shopOri <- shop
+		for i:=0; i < int(num); i++{
+			shopOri<- *(trades[i]) //company
 		}
 		shopChan <- 1
 	}()
@@ -48,24 +63,15 @@ func getShopInfo() (<-chan monitor.ShopInfo, error) {
 	return shopOri, nil
 }
 
-/**
- * 获取公司信息
- */
-func getCompanyInfo() (<-chan monitor.CompanyInfo, error) {
-	var company monitor.CompanyInfo
-	var inter = monitor.RowData{&company.Id, &company.Name}
+// 获取公司信息
+func getCompanyInfo() (<-chan CompanyDetail, error) {
 
-	var err error
-	rows := db.Db.GetConnection("uc_production").Table("company_detail").Select("id","name").Where([]interface{}{[]interface{}{"is_delete",0}}...).Get()
-
-	companyOri := make(chan monitor.CompanyInfo)
+	var trades []*CompanyDetail
+	num,_ := model.Read(new(CompanyDetail)).Filter("is_delete",0).GetAll(&trades)
+	companyOri := make(chan CompanyDetail)
 	go func() {
-		for rows.Next() {
-			err = rows.Scan(inter...)
-			if err != nil {
-				panic(err.Error())
-			}
-			companyOri <- company
+		for i:=0; i < int(num); i++{
+			companyOri <- *(trades[i]) //company
 		}
 		companyChan <- 1
 	}()
@@ -101,7 +107,7 @@ func ParseShop() {
 			select {
 			case info := <-oriChan:
 
-				monitor.ShopMap[info.ShopId] = info.Alias
+				monitor.ShopMap[info.Sid] = info.Alias
 			case <-shopChan:
 				monitor.C <- 1
 				return
@@ -109,70 +115,16 @@ func ParseShop() {
 		}
 	}()
 }
-type User struct {
-	Id 		int
-	Name 	string
-	Mobile	string
-	Address string
-}
-
-func (u *User) TableName() string {
-	return "user_info"
-}
-
-type OrderInfo struct {
-	Id 			int
-	Oid 		string
-	Username 	string
-}
-func (u *OrderInfo) TableName() string {
-	return "order_info"
-}
 
 func main() {
 	ModelInit()
-	//_ = config.Init()
-	//_ = db.Db.Init()
-	//var users []*User
-	//var userEntity *User
-	//var orders	[]*OrderInfo
-	//var orderEntity *OrderInfo
-	//var trades []*OrderTrade
-	//model.RegisterModel(new(User),new(OrderInfo),new(OrderTrade))
-
-	//num,_ := model.Read(new(User)).Filter("id",">",20000).GetAll(&users)
-	//num,_ := model.Read(new(OrderTrade)).Filter("id",">",100).GetAll(&trades)
-	//_ = model.Read(new(User)).Filter("id",22000).GetOne(&userEntity)
-	//count := model.Read(new(User)).Filter("id",">",22000).Count()
-
-	//fmt.Println(num)
-	//fmt.Println(userEntity)
-	//fmt.Println(count)
-
-	//num,_ := model.Read(new(OrderInfo)).GetAll(&orders)
-	//fmt.Println(num)
-	/*_ = orm.RegisterDriver("mysql", orm.DRMySQL)
-
-	_= orm.RegisterDataBase("default", "mysql", "root:123456@/myData?charset=utf8")
-
-	orm.RegisterModel(new(User))
-
-	o := orm.NewOrm()
-
-	var users []*User
-	num,_ := o.QueryTable("user_info").Filter("id__gt",20000).All(&users)
-
-	fmt.Println(num)
-	fmt.Println(users[0])*/
-
-	//return
 	err := monitor.Init()
 	err = db.Db.Init()
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
-	monitor.SafeCompanyOrder = monitor.NewSafeMap()
+	Tool.Init()
 
 	defer close(monitor.C)
 	//for num:=0 ; num < 10000; num++ {
@@ -209,5 +161,14 @@ func main() {
 }
 
 func ModelInit() {
-	model.RegisterModel(new(Alibb.OrderTrade),new(Youzan.OrderTrade),new(Pdd.OrderTrade),new(Wm.OrderTrade))
+	model.RegisterModel(
+		new(Alibb.OrderTrade),
+		new(Youzan.OrderTrade),
+		new(Pdd.OrderTrade),
+		new(Wm.OrderTrade),
+		new(Jd.OrderTrade),
+		new(Tool.OrderInfo),
+		new(Tool.OrderUnusual),
+		new(CompanyDetail),
+		new(ShopInfo))
 }
