@@ -12,9 +12,7 @@ var Order = monitor.MyOrderInfo{
 	Platform: "拼多多", PlatformKey:"PDD",
 }
 
-/**
- * 获取拼多多的原始数据
- */
+// 获取拼多多的原始数据
 func getPddOriginData() (<-chan monitor.Jdp, error) {
 	var myT monitor.MyTime
 

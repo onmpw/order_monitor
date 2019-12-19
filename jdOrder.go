@@ -117,11 +117,6 @@ func ParseShop() {
 
 func main() {
 	ModelInit()
-	//err := monitor.Init()
-	//err = db.Db.Init()
-	/*if err != nil {
-		log.Panic(err.Error())
-	}*/
 
 	Tool.Init()
 
