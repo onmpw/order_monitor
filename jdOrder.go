@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/onmpw/JYGO/model"
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
-	"monitor/monitor/db"
-	"monitor/monitor/model"
 	"monitor/platform/Alibb"
 	"monitor/platform/Jd"
 	"monitor/platform/Pdd"
@@ -118,11 +117,11 @@ func ParseShop() {
 
 func main() {
 	ModelInit()
-	err := monitor.Init()
-	err = db.Db.Init()
-	if err != nil {
+	//err := monitor.Init()
+	//err = db.Db.Init()
+	/*if err != nil {
 		log.Panic(err.Error())
-	}
+	}*/
 
 	Tool.Init()
 
@@ -161,6 +160,7 @@ func main() {
 }
 
 func ModelInit() {
+	model.Init()
 	model.RegisterModel(
 		new(Alibb.OrderTrade),
 		new(Youzan.OrderTrade),

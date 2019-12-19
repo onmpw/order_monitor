@@ -1,10 +1,10 @@
 package Pdd
 
 import (
+	"github.com/onmpw/JYGO/model"
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
-	"monitor/monitor/model"
 )
 
 var pddChan = make(chan int, 1)

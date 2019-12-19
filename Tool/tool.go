@@ -2,8 +2,8 @@ package Tool
 
 import (
 	"fmt"
+	"github.com/onmpw/JYGO/model"
 	"monitor/monitor"
-	"monitor/monitor/model"
 	"reflect"
 )
 
@@ -43,7 +43,6 @@ func CheckSync(order *monitor.MyOrderInfo, oriChan <-chan monitor.Jdp, quit <-ch
 			monitor.SafeCompanyOrder.NewElement(orderInfo)
 			if count == 0 {
 				order.FailedCount++ //  记录失败数量
-
 				// 记录失败订单的信息
 				SetOrder(&failedOrder,orderInfo)
 

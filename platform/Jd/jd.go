@@ -1,10 +1,10 @@
 package Jd
 
 import (
+	"github.com/onmpw/JYGO/model"
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
-	"monitor/monitor/model"
 )
 
 var jdChan = make(chan int, 1)

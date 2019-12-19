@@ -1,10 +1,10 @@
 package Alibb
 
 import (
+	"github.com/onmpw/JYGO/model"
 	"log"
 	"monitor/Tool"
 	"monitor/monitor"
-	"monitor/monitor/model"
 )
 
 

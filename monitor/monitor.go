@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"fmt"
-	"monitor/monitor/config"
 	"sync"
 	"time"
 )
@@ -110,7 +109,7 @@ func (myOrders MyOrderInfoArr) ShowOrderInfo() {
 	}
 }
 
-func Init() error {
+/*func Init() error {
 
 	// 加载配置文件
 	err := config.Init()
@@ -118,7 +117,7 @@ func Init() error {
 		return err
 	}
 	return nil
-}
+}*/
 
 // 等待goroutine 执行完
 func Wait(ch <-chan int, num int) {
